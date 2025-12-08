@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Trie Visualization</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --highlight-color: #f39c12;
+            --success-color: #27ae60;
+            --danger-color: #c0392b;
+            --bg-color: #ecf0f1;
+            --node-radius: 20;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; }
+        p { margin: 0.5rem 0 0; opacity: 0.8; font-size: 0.9rem; }
+
+        .controls {
+            background: white;
+            padding: 1rem;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        select, input, button {
+            padding: 10px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .status-bar {
+            background-color: #fff;
+            padding: 0.5rem;
+            text-align: center;
+            font-style: italic;
+            border-bottom: 1px solid #ddd;
+            min-height: 24px;
+            color: #555;
+        }
+
+        #canvas-container {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: #fafafa;
+            cursor: grab;
+        }
+
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+        }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Trie (Prefix Tree) Visualization</h1>
+    <p>Data Structures & Algorithms - Interactive Study Tool</p>
+</header>
+
+<div class="controls">
+    <label for="operation">Operation:</label>
+    <select id="operation">
+        <option value="insert">Insert Word</option>
+        <option value="find">Find Word</option>
+        <option value="remove">Remove Word</option>
+        <option value="autocomplete">Autocomplete (Prefix)</option>
+    </select>
+
+    <input type="text" id="wordInput" placeholder="Enter word (e.g. 'cat')" maxlength="15">
+
+    <button id="visualizeBtn">Visualize</button>
+    <button id="clearBtn" style="background-color: var(--danger-color)">Clear Trie</button>
+
+    <label for="speedRange" style="margin-left: 15px">Speed:</label>
+    <input type="range" id="speedRange" min="1" max="10" value="5">
+</div>
+
+<div class="status-bar" id="statusMsg">Ready.</div>
+
+<div id="canvas-container">
+    <canvas id="trieCanvas"></canvas>
+    <div class="legend">
+        <div class="legend-item"><span class="dot" style="border: 2px solid #333; background: #fff;"></span>Regular Node</div>
+        <div class="legend-item"><span class="dot" style="background: #27ae60; border: 2px solid #27ae60;"></span>End of Word</div>
+        <div class="legend-item"><span class="dot" style="border: 2px solid #f39c12; background: transparent;"></span>Traversal/Current</div>
+        <div class="legend-item"><span class="dot" style="background: #e74c3c;"></span>Match Found</div>
+    </div>
+</div>
+
+<script>
+    /**
+     * Trie Node Class
+     */
+    class TrieNode {
+        constructor(value = '') {
+            this.value = value;
+            this.children = {}; // Using object/map for children
+            this.isEndOfWord = false;
+            
+            // Visualization properties
+            this.id = Math.random().toString(36).substr(2, 9);
+            this.x = 0;
+            this.y = 0;
+            this.width = 0; // Subtree width
+        }
+    }
+
+    /**
+     * Animation Queue Class
+     * Manages step-by-step visualization events
+     */
+    class AnimationQueue {
+        constructor() {
+            this.queue = [];
+            this.isPlaying = false;
+            this.currentStep = null;
+        }
+
+        add(action) {
+            this.queue.push(action);
+        }
+
+        clear() {
+            this.queue = [];
+            this.isPlaying = false;
+        }
+
+        async play(delayCallback) {
+            if (this.isPlaying) return;
+            this.isPlaying = true;
+
+            while (this.queue.length > 0) {
+                this.currentStep = this.queue.shift();
+                
+                // Execute the visual update
+                drawTrie(this.currentStep);
+                updateStatus(this.currentStep.message);
+
+                // Wait based on speed setting
+                await delayCallback();
+            }
+
+            // Final draw to clear highlights
+            drawTrie(null);
+            this.isPlaying = false;
+            enableControls(true);
+        }
+    }
+
+    // --- Global Variables ---
+    let root = new TrieNode();
+    const canvas = document.getElementById('trieCanvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('canvas-container');
+    const animator = new AnimationQueue();
+    
+    // Config
+    const NODE_RADIUS = 20;
+    const LEVEL_HEIGHT = 80;
+    
+    // Viewport state (for panning)
+    let offsetX = 0;
+    let offsetY = 50;
+    let isDragging = false;
+    let lastMouseX, lastMouseY;
+
+    // --- Trie Logic with Animation Hooks ---
+
+    function insert(word) {
+        if (!word) return;
+        word = word.toLowerCase();
+        let current = root;
+        
+        animator.add({ type: 'highlight', node: current, message: `Starting at Root` });
+
+        for (let i = 0; i < word.length; i++) {
+            const char = word[i];
+            
+            animator.add({ 
+                type: 'traverse', 
+                node: current, 
+                targetChar: char,
+                message: `Looking for child '${char}'...` 
+            });
+
+            if (!current.children[char]) {
+                animator.add({ 
+                    type: 'create', 
+                    parentNode: current, 
+                    char: char,
+                    message: `Child '${char}' not found. Creating new node.` 
+                });
+                current.children[char] = new TrieNode(char);
+                recalculateLayout(root); // Recalculate positions immediately for visual
+            } else {
+                animator.add({ 
+                    type: 'found-child', 
+                    node: current.children[char], 
+                    message: `Found child '${char}'. Moving down.` 
+                });
+            }
+            current = current.children[char];
+        }
+
+        current.isEndOfWord = true;
+        animator.add({ 
+            type: 'mark-end', 
+            node: current, 
+            message: `Marked '${current.value}' as End of Word.` 
+        });
+    }
+
+    function find(word) {
+        if (!word) return;
+        word = word.toLowerCase();
+        let current = root;
+
+        animator.add({ type: 'highlight', node: current, message: `Starting search for "${word}"` });
+
+        for (let i = 0; i < word.length; i++) {
+            const char = word[i];
+            
+            animator.add({ type: 'traverse', node: current, message: `Checking for '${char}'...` });
+
+            if (!current.children[char]) {
+                animator.add({ type: 'error', node: current, message: `Child '${char}' not found. Word does not exist.` });
+                return false;
+            }
+            
+            current = current.children[char];
+            animator.add({ type: 'highlight', node: current, message: `Found '${char}'.` });
+        }
+
+        if (current.isEndOfWord) {
+            animator.add({ type: 'success', node: current, message: `Word "${word}" found!` });
+            return true;
+        } else {
+            animator.add({ type: 'error', node: current, message: `Prefix "${word}" exists, but it is not marked as a complete word.` });
+            return false;
+        }
+    }
+
+    // Recursive removal logic based on slides
+    function remove(word) {
+        if (!word) return;
+        word = word.toLowerCase();
+        
+        // First check if it exists so we can animate the search path
+        if (!find(word)) return; // Find will handle the "not found" animation
+
+        // Now perform the actual removal with animation
+        const removeHelper = (node, word, depth) => {
+            // Base case: end of word
+            if (depth === word.length) {
+                animator.add({ type: 'unmark', node: node, message: `Unmarking end of word at '${node.value}'` });
+                node.isEndOfWord = false;
+                
+                // If no children, we can delete this node (return true to parent indicating safe to delete)
+                return Object.keys(node.children).length === 0;
+            }
+
+            const char = word[depth];
+            const child = node.children[char];
+            
+            animator.add({ type: 'traverse', node: child, message: `Traversing to '${char}' for removal...` });
+
+            // Recursive call
+            const shouldDeleteChild = removeHelper(child, word, depth + 1);
+
+            if (shouldDeleteChild) {
+                animator.add({ type: 'delete', node: child, parent: node, message: `Node '${char}' has no other children. Deleting.` });
+                delete node.children[char];
+                recalculateLayout(root);
+                
+                // Return true if current node is also now leaf and not end of word
+                return Object.keys(node.children).length === 0 && !node.isEndOfWord;
+            }
+            
+            return false;
+        };
+
+        animator.add({ type: 'highlight', node: root, message: `Starting removal of "${word}"` });
+        removeHelper(root, word, 0);
+    }
+
+    function autocomplete(prefix) {
+        if (!prefix) return;
+        prefix = prefix.toLowerCase();
+        let current = root;
+        let words = [];
+
+        // 1. Traverse to prefix
+        animator.add({ type: 'highlight', node: current, message: `Finding prefix "${prefix}"...` });
+        
+        for (let i = 0; i < prefix.length; i++) {
+            const char = prefix[i];
+            if (!current.children[char]) {
+                animator.add({ type: 'error', node: current, message: `Prefix "${prefix}" not found.` });
+                return;
+            }
+            current = current.children[char];
+            animator.add({ type: 'highlight', node: current, message: `Found prefix char '${char}'` });
+        }
+
+        // 2. DFS to collect words
+        const collectWords = (node, currentWord) => {
+            animator.add({ type: 'scan', node: node, message: `Scanning subtree... current word: ${currentWord}` });
+            
+            if (node.isEndOfWord) {
+                words.push(currentWord);
+                animator.add({ type: 'success', node: node, message: `Found completion: ${currentWord}` });
+            }
+
+            for (let char of Object.keys(node.children).sort()) {
+                collectWords(node.children[char], currentWord + char);
+            }
+        };
+
+        collectWords(current, prefix);
+        animator.add({ type: 'info', message: `Autocomplete results: ${words.join(', ')}` });
+    }
+
+    // --- Visualization & Layout ---
+
+    // Simple recursive layout: calculate width required for each subtree
+    function recalculateLayout(node) {
+        if (!node) return;
+
+        // Reset
+        const calculateDimensions = (n) => {
+            let width = 0;
+            const keys = Object.keys(n.children).sort();
+            
+            if (keys.length === 0) {
+                width = NODE_RADIUS * 3; // Minimum width for a leaf
+            } else {
+                keys.forEach(key => {
+                    width += calculateDimensions(n.children[key]);
+                });
+            }
+            n.width = width;
+            return width;
+        };
+
+        calculateDimensions(root);
+
+        // Assign Coordinates
+        const assignCoords = (n, x, y) => {
+            n.x = x;
+            n.y = y;
+            
+            const keys = Object.keys(n.children).sort();
+            let startX = x - n.width / 2;
+            
+            keys.forEach(key => {
+                const child = n.children[key];
+                const childWidth = child.width;
+                // Center the child in its allocated slice
+                assignCoords(child, startX + childWidth / 2, y + LEVEL_HEIGHT);
+                startX += childWidth;
+            });
+        };
+
+        // Start root at center of what we consider "0"
+        assignCoords(root, 0, 50);
+        
+        // Center the view on root initially if first render
+        if (root.x === 0 && root.y === 50 && offsetX === 0) {
+             offsetX = canvas.width / 2;
+        }
+    }
+
+    function drawTrie(activeStep) {
+        // Clear Canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.save();
+        ctx.translate(offsetX, offsetY);
+
+        // Recursive draw
+        const drawNode = (node) => {
+            // Draw Edges first (so they are behind nodes)
+            const keys = Object.keys(node.children).sort();
+            keys.forEach(key => {
+                const child = node.children[key];
+                ctx.beginPath();
+                ctx.moveTo(node.x, node.y);
+                ctx.lineTo(child.x, child.y);
+                ctx.strokeStyle = '#95a5a6';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                drawNode(child);
+            });
+
+            // Draw Node Circle
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, NODE_RADIUS, 0, 2 * Math.PI);
+            
+            // Default Style
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#2c3e50';
+            ctx.lineWidth = 2;
+
+            // State-based Styling (End of Word)
+            if (node.isEndOfWord) {
+                ctx.fillStyle = '#d5f5e3'; // Light Green
+                ctx.strokeStyle = '#27ae60';
+                ctx.lineWidth = 3;
+            }
+
+            // Animation Highlight Logic
+            if (activeStep) {
+                if (activeStep.node === node) {
+                    if (activeStep.type === 'highlight' || activeStep.type === 'traverse') {
+                        ctx.strokeStyle = '#f39c12'; // Orange ring
+                        ctx.lineWidth = 4;
+                    } else if (activeStep.type === 'success' || activeStep.type === 'found-child') {
+                        ctx.fillStyle = '#abebc6';
+                    } else if (activeStep.type === 'error') {
+                        ctx.fillStyle = '#fadbd8';
+                        ctx.strokeStyle = '#c0392b';
+                    }
+                }
+                // Special case for 'scan' (Autocomplete) - highlight subtree
+                if (activeStep.type === 'scan' && activeStep.node === node) {
+                     ctx.shadowBlur = 10;
+                     ctx.shadowColor = "#3498db";
+                }
+            }
+
+            ctx.fill();
+            ctx.stroke();
+            ctx.shadowBlur = 0; // Reset shadow
+
+            // Draw Text
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(node.value || (node === root ? '*' : ''), node.x, node.y);
+        };
+
+        drawNode(root);
+        ctx.restore();
+    }
+
+    function updateStatus(msg) {
+        document.getElementById('statusMsg').textContent = msg;
+    }
+
+    // --- Interaction & Utils ---
+
+    function getDelay() {
+        const val = document.getElementById('speedRange').value;
+        // Map 1-10 to delay in ms (1 = slow = 1500ms, 10 = fast = 100ms)
+        return 1500 - (val * 140);
+    }
+
+    function enableControls(enabled) {
+        document.getElementById('visualizeBtn').disabled = !enabled;
+        document.getElementById('clearBtn').disabled = !enabled;
+    }
+
+    function resizeCanvas() {
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        // Re-center if needed, or keep offset
+        if (offsetX === 0) offsetX = canvas.width / 2;
+        drawTrie(null);
+    }
+
+    // Main Operation Handler
+    document.getElementById('visualizeBtn').addEventListener('click', () => {
+        const op = document.getElementById('operation').value;
+        const word = document.getElementById('wordInput').value.trim();
+        
+        if (!word) {
+            updateStatus("Please enter a word.");
+            return;
+        }
+
+        enableControls(false); // Disable during animation
+
+        if (op === 'insert') insert(word);
+        else if (op === 'find') find(word);
+        else if (op === 'remove') remove(word);
+        else if (op === 'autocomplete') autocomplete(word);
+
+        // Start animation loop
+        animator.play(() => new Promise(resolve => setTimeout(resolve, getDelay())));
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+        root = new TrieNode();
+        animator.clear();
+        recalculateLayout(root);
+        drawTrie(null);
+        updateStatus("Trie cleared.");
+    });
+
+    // Panning Logic
+    container.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        container.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
+        container.style.cursor = 'grab';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            const dx = e.clientX - lastMouseX;
+            const dy = e.clientY - lastMouseY;
+            offsetX += dx;
+            offsetY += dy;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            drawTrie(animator.currentStep);
+        }
+    });
+
+    // Init
+    window.addEventListener('resize', resizeCanvas);
+    recalculateLayout(root);
+    resizeCanvas();
+    
+    // Initial Setup
+    // Pre-populate with a few words for demo purposes without animation first
+    const demoWords = ['cat', 'car', 'do', 'dog'];
+    demoWords.forEach(w => {
+        let curr = root;
+        for(let c of w) {
+            if(!curr.children[c]) curr.children[c] = new TrieNode(c);
+            curr = curr.children[c];
+        }
+        curr.isEndOfWord = true;
+    });
+    recalculateLayout(root);
+    drawTrie(null);
+    updateStatus("Initialized with demo words: cat, car, do, dog");
+
+</script>
+</body>
+</html>

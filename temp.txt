@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Structures Visualizer - Wii U</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --wii-blue: #00A9E0;
+            --wii-light-blue: #6DD5FA;
+            --wii-gray: #A8A8A8;
+            --wii-dark: #2C2C2C;
+            --wii-bg: #E8E8E8;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(180deg, #E8F4F8 0%, #B8D8E8 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(109, 213, 250, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 169, 224, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .screen-container {
+            width: 90vw;
+            max-width: 900px;
+            height: 80vh;
+            min-height: 500px;
+            background: linear-gradient(180deg, #F5F5F5 0%, #D5D5D5 100%);
+            border-radius: 24px;
+            box-shadow: 
+                0 30px 80px rgba(0, 0, 0, 0.25),
+                inset 0 2px 4px rgba(255, 255, 255, 0.8),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Metallic texture effect */
+        .screen-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 1px,
+                    rgba(0, 0, 0, 0.02) 1px,
+                    rgba(0, 0, 0, 0.02) 2px
+                );
+            pointer-events: none;
+        }
+
+        .display-area {
+            flex: 1;
+            margin: 30px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 
+                inset 0 4px 12px rgba(0, 0, 0, 0.15),
+                0 2px 4px rgba(255, 255, 255, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Channel Views */
+        .channel-view {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 40px;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .channel-view.active {
+            display: flex;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Welcome Screen */
+        .wii-logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .wii-text {
+            font-family: 'Comfortaa', cursive;
+            font-size: 72px;
+            font-weight: 700;
+            color: var(--wii-gray);
+            letter-spacing: -2px;
+        }
+
+        .wii-u {
+            font-family: 'Comfortaa', cursive;
+            font-size: 72px;
+            font-weight: 700;
+            background: linear-gradient(180deg, var(--wii-blue) 0%, var(--wii-light-blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -2px;
+        }
+
+        .welcome-subtitle {
+            font-size: 18px;
+            color: #666;
+            text-align: center;
+            max-width: 450px;
+            line-height: 1.6;
+            margin-bottom: 50px;
+        }
+
+        /* Channel Screens */
+        .channel-icon {
+            width: 180px;
+            height: 180px;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 100px;
+            margin-bottom: 30px;
+            box-shadow: 
+                0 10px 30px rgba(0, 0, 0, 0.15),
+                inset 0 2px 4px rgba(255, 255, 255, 0.3);
+            position: relative;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .channel-icon::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, transparent 100%);
+        }
+
+        .channel-title {
+            font-family: 'Comfortaa', cursive;
+            font-size: 42px;
+            font-weight: 700;
+            color: var(--wii-dark);
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .channel-description {
+            font-size: 18px;
+            color: #666;
+            text-align: center;
+            max-width: 500px;
+            line-height: 1.7;
+            margin-bottom: 30px;
+        }
+
+        .start-prompt {
+            font-size: 16px;
+            color: var(--wii-blue);
+            font-weight: 600;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Control Panel */
+        .control-panel {
+            padding: 25px 40px;
+            background: linear-gradient(180deg, #FAFAFA 0%, #E8E8E8 100%);
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .instruction-text {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+
+        .buttons-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FFFFFF 0%, #E8E8E8 100%);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--wii-blue);
+            box-shadow: 
+                0 4px 8px rgba(0, 0, 0, 0.15),
+                inset 0 1px 2px rgba(255, 255, 255, 0.8);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .nav-button:hover {
+            transform: scale(1.05);
+            box-shadow: 
+                0 6px 12px rgba(0, 0, 0, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .nav-button:active {
+            transform: scale(0.95);
+            box-shadow: 
+                0 2px 4px rgba(0, 0, 0, 0.15),
+                inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .action-button {
+            padding: 14px 35px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #FFFFFF 0%, #E8E8E8 100%);
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--wii-dark);
+            box-shadow: 
+                0 4px 8px rgba(0, 0, 0, 0.15),
+                inset 0 1px 2px rgba(255, 255, 255, 0.8);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 6px 12px rgba(0, 0, 0, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .action-button:active {
+            transform: translateY(0);
+            box-shadow: 
+                0 2px 4px rgba(0, 0, 0, 0.15),
+                inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .action-button.primary {
+            background: linear-gradient(135deg, var(--wii-blue) 0%, var(--wii-light-blue) 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Channel indicator dots */
+        .channel-indicators {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .indicator-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #CCC;
+            transition: all 0.3s ease;
+        }
+
+        .indicator-dot.active {
+            background: var(--wii-blue);
+            transform: scale(1.3);
+        }
+
+        /* Iframe container */
+        .iframe-view {
+            width: 100%;
+            height: 100%;
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .iframe-view.active {
+            display: block;
+        }
+
+        .iframe-view iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .wii-text, .wii-u {
+                font-size: 48px;
+            }
+
+            .channel-title {
+                font-size: 32px;
+            }
+
+            .channel-icon {
+                width: 140px;
+                height: 140px;
+                font-size: 80px;
+            }
+
+            .buttons-row {
+                gap: 12px;
+            }
+
+            .nav-button {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="screen-container">
+        <div class="display-area">
+            <!-- Welcome Channel (Index 0) -->
+            <div class="channel-view active" data-channel="0">
+                <div class="wii-logo">
+                    <span class="wii-text">Wii</span>
+                    <span class="wii-u">U</span>
+                </div>
+                <p class="welcome-subtitle">
+                    To return to the Wii U Menu,<br>select Start.
+                </p>
+            </div>
+
+            <!-- Tries Channel (Index 1) -->
+            <div class="channel-view" data-channel="1">
+                <div class="channel-icon" style="background: linear-gradient(135deg, #FF6B9D, #FFB3C6);">
+                    🌳
+                </div>
+                <h2 class="channel-title">Tries</h2>
+                <p class="channel-description">
+                    Prefix tree structure for efficient string operations and autocomplete functionality.
+                </p>
+                <p class="start-prompt">Press Start to launch visualization →</p>
+            </div>
+
+            <!-- Heaps Channel (Index 2) -->
+            <div class="channel-view" data-channel="2">
+                <div class="channel-icon" style="background: linear-gradient(135deg, #4A9EFF, #A3D5FF);">
+                    ⛰️
+                </div>
+                <h2 class="channel-title">Heaps</h2>
+                <p class="channel-description">
+                    Binary tree with heap property for priority queues and efficient min/max operations.
+                </p>
+                <p class="start-prompt">Press Start to launch visualization →</p>
+            </div>
+
+            <!-- Hash Tables Channel (Index 3) -->
+            <div class="channel-view" data-channel="3">
+                <div class="channel-icon" style="background: linear-gradient(135deg, #B19CD9, #D4C5F9);">
+                    #️⃣
+                </div>
+                <h2 class="channel-title">Hash Tables</h2>
+                <p class="channel-description">
+                    Key-value pairs with O(1) average lookup time using hash functions and collision resolution.
+                </p>
+                <p class="start-prompt">Press Start to launch visualization →</p>
+            </div>
+
+            <!-- Linked Lists Channel (Index 4) -->
+            <div class="channel-view" data-channel="4">
+                <div class="channel-icon" style="background: linear-gradient(135deg, #FFB347, #FFD89B);">
+                    🔗
+                </div>
+                <h2 class="channel-title">Linked Lists</h2>
+                <p class="channel-description">
+                    Sequential nodes with pointer-based connections for dynamic data structure operations.
+                </p>
+                <p class="start-prompt">Press Start to launch visualization →</p>
+            </div>
+
+            <!-- Iframe view for visualizations -->
+            <div class="iframe-view" id="iframeView">
+                <!-- Iframe will be inserted here -->
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <p class="instruction-text" id="instructionText">
+                Use arrows to browse channels • Press Start to begin
+            </p>
+            <div class="buttons-row">
+                <button class="nav-button" id="prevBtn" onclick="previousChannel()">◀</button>
+                <button class="action-button" id="menuBtn" onclick="returnToMenu()">Wii Menu</button>
+                <button class="action-button primary" id="startBtn" onclick="startVisualization()">Start</button>
+                <button class="nav-button" id="nextBtn" onclick="nextChannel()">▶</button>
+            </div>
+            <div class="channel-indicators" id="channelIndicators">
+                <div class="indicator-dot active"></div>
+                <div class="indicator-dot"></div>
+                <div class="indicator-dot"></div>
+                <div class="indicator-dot"></div>
+                <div class="indicator-dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const channels = [
+            { name: 'Welcome', file: null },
+            { name: 'Tries', file: 'trie.html' },
+            { name: 'Heaps', file: 'heap.html' },
+            { name: 'Hash Tables', file: 'hashtable.html' },
+            { name: 'Linked Lists', file: 'linkedlist.html' }
+        ];
+
+        let currentChannel = 0;
+        let visualizationActive = false;
+
+        function updateChannelDisplay() {
+            // Hide all channel views
+            document.querySelectorAll('.channel-view').forEach(view => {
+                view.classList.remove('active');
+            });
+
+            // Show current channel
+            const currentView = document.querySelector(`[data-channel="${currentChannel}"]`);
+            if (currentView) {
+                currentView.classList.add('active');
+            }
+
+            // Update indicators
+            document.querySelectorAll('.indicator-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentChannel);
+            });
+
+            // Update buttons
+            updateButtonStates();
+        }
+
+        function updateButtonStates() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const startBtn = document.getElementById('startBtn');
+            const instructionText = document.getElementById('instructionText');
+
+            if (visualizationActive) {
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                startBtn.textContent = 'Close';
+                startBtn.classList.remove('primary');
+                instructionText.textContent = 'Press Close to return to channels';
+            } else {
+                prevBtn.disabled = currentChannel === 0;
+                nextBtn.disabled = currentChannel === channels.length - 1;
+                
+                if (currentChannel === 0) {
+                    startBtn.textContent = 'Start';
+                    startBtn.classList.add('primary');
+                    instructionText.textContent = 'Use arrows to browse channels • Press Start to begin';
+                } else {
+                    startBtn.textContent = 'Start';
+                    startBtn.classList.add('primary');
+                    instructionText.textContent = `Launch ${channels[currentChannel].name} visualization`;
+                }
+            }
+        }
+
+        function previousChannel() {
+            if (currentChannel > 0 && !visualizationActive) {
+                currentChannel--;
+                updateChannelDisplay();
+            }
+        }
+
+        function nextChannel() {
+            if (currentChannel < channels.length - 1 && !visualizationActive) {
+                currentChannel++;
+                updateChannelDisplay();
+            }
+        }
+
+        function startVisualization() {
+            if (visualizationActive) {
+                // Close visualization
+                closeVisualization();
+            } else if (currentChannel > 0) {
+                // Launch visualization
+                const channel = channels[currentChannel];
+                const iframeView = document.getElementById('iframeView');
+                
+                // Create iframe
+                const iframe = document.createElement('iframe');
+                iframe.src = `visualizations/${channel.file}`;
+                iframeView.innerHTML = '';
+                iframeView.appendChild(iframe);
+                
+                // Show iframe view
+                iframeView.classList.add('active');
+                visualizationActive = true;
+                updateButtonStates();
+            } else {
+                // From welcome screen, go to first channel
+                currentChannel = 1;
+                updateChannelDisplay();
+            }
+        }
+
+        function closeVisualization() {
+            const iframeView = document.getElementById('iframeView');
+            iframeView.classList.remove('active');
+            iframeView.innerHTML = '';
+            visualizationActive = false;
+            updateButtonStates();
+        }
+
+        function returnToMenu() {
+            if (visualizationActive) {
+                closeVisualization();
+            }
+            currentChannel = 0;
+            updateChannelDisplay();
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                previousChannel();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                nextChannel();
+            } else if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                startVisualization();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                if (visualizationActive) {
+                    closeVisualization();
+                } else {
+                    returnToMenu();
+                }
+            }
+        });
+
+        // Initialize
+        updateChannelDisplay();
+    </script>
+</body>
+</html>
