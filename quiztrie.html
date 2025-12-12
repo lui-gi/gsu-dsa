@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS Exam: Tries & Prefix Trees</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --light: #ecf0f1;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: var(--primary);
+            border-bottom: 2px solid var(--light);
+            padding-bottom: 10px;
+        }
+        .progress-bar {
+            height: 10px;
+            background: var(--light);
+            border-radius: 5px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .question-card {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        .question-card.active {
+            display: block;
+        }
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+            white-space: pre;
+        }
+        .input-blank {
+            background: #fff;
+            border: 1px solid #ccc;
+            color: #333;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: inherit;
+            width: 100px;
+        }
+        .options {
+            list-style: none;
+            padding: 0;
+        }
+        .options li {
+            margin: 10px 0;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: white;
+            border: 2px solid var(--light);
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            font-size: 16px;
+        }
+        .btn:hover {
+            border-color: var(--accent);
+            background: #fdfdfd;
+        }
+        .btn.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .feedback.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .nav-btns {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+        .action-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .action-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        /* Visual Trie Styles */
+        .trie-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .node-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .trie-node {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .trie-node.active {
+            background: var(--accent);
+            color: white;
+        }
+        .trie-node.end-word {
+            border-color: var(--success);
+            border-width: 4px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Final Exam: Tries (Prefix Trees)</h1>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress"></div>
+    </div>
+
+    <div class="question-card active" id="q1">
+        <h2>1. Definitions & Characteristics</h2>
+        <p>Which of the following statements is <strong>FALSE</strong> regarding Tries based on the lecture slides?</p>
+        <ul class="options">
+            <li><button class="btn" onclick="selectOption('q1', 0)">A Trie is also known as a digital tree or prefix tree.</button></li>
+            <li><button class="btn" onclick="selectOption('q1', 1)">The root node always contains the first letter of the first word inserted.</button></li>
+            <li><button class="btn" onclick="selectOption('q1', 2)">It is a k-ary search tree.</button></li>
+            <li><button class="btn" onclick="selectOption('q1', 3)">Each solution is a (sub)path from the root to a node.</button></li>
+        </ul>
+        <div class="feedback" id="f1"></div>
+    </div>
+
+    <div class="question-card" id="q2">
+        <h2>2. Array vs. Hash Table Implementation</h2>
+        <p>The slides implement the <code>Node</code> class using an array (list) for children. Specifically, <code>self.children = [None] * 26</code>.</p>
+        <p><strong>Compare this to a Hash Table based implementation:</strong></p>
+        <ul class="options">
+            <li><button class="btn" onclick="selectOption('q2', 0)">The Array approach is slower for lookups than the Hash Table approach.</button></li>
+            <li><button class="btn" onclick="selectOption('q2', 1)">The Hash Table approach always uses more memory than the Array approach.</button></li>
+            <li><button class="btn" onclick="selectOption('q2', 2)">The Array approach allows O(1) direct access to children by index, whereas Hash Tables handle sparse nodes better but with overhead.</button></li>
+            <li><button class="btn" onclick="selectOption('q2', 3)">The slides explicitly state that Hash Tables are impossible to use for Tries.</button></li>
+        </ul>
+        <div class="feedback" id="f2"></div>
+    </div>
+
+    <div class="question-card" id="q3">
+        <h2>3. Time Complexity</h2>
+        <p>Based on the lecture slides, what is the Time Complexity for <strong>Insert</strong>, <strong>Find</strong>, and <strong>Remove</strong> operations in a Trie?</p>
+        <p><em>(Let <code>l</code> be the length of the word)</em></p>
+        <ul class="options">
+            <li><button class="btn" onclick="selectOption('q3', 0)">O(1) - Constant time regardless of word length.</button></li>
+            <li><button class="btn" onclick="selectOption('q3', 1)">O(l) - Linear time relative to the length of the word.</button></li>
+            <li><button class="btn" onclick="selectOption('q3', 2)">O(log n) - Logarithmic relative to the number of words in the dictionary.</button></li>
+            <li><button class="btn" onclick="selectOption('q3', 3)">O(n) - Linear time relative to the total number of keys in the Trie.</button></li>
+        </ul>
+        <div class="feedback" id="f3"></div>
+    </div>
+
+    <div class="question-card" id="q4">
+        <h2>4. Code Completion: Insert</h2>
+        <p>Fill in the blanks to complete the standard Python <code>insert</code> implementation from the slides.</p>
+        <div class="code-block">
+def insert(self, word):
+    current = self.root
+    for ch in word:
+        # Calculate index for 'a' -> 0, 'b' -> 1...
+        idx = ord(ch) - <input type="text" class="input-blank" id="q4-i1" placeholder="code">
+        
+        if current.children[idx] is <input type="text" class="input-blank" id="q4-i2" placeholder="value">:
+            current.children[idx] = self.Node(ch)
+            
+        current = current.<input type="text" class="input-blank" id="q4-i3" placeholder="attrib">[idx]
+        
+    current.<input type="text" class="input-blank" id="q4-i4" placeholder="flag"> = True
+        </div>
+        <button class="action-btn" onclick="checkCode('q4')">Check Code</button>
+        <div class="feedback" id="f4"></div>
+    </div>
+
+    <div class="question-card" id="q5">
+        <h2>5. Visualizing the Trie</h2>
+        <p>We are building a Trie with the words: <strong>"to", "ted", "ten"</strong>.</p>
+        <p>Click the nodes below in the correct order to trace the path for inserting <strong>"ten"</strong> assuming "to" and "ted" are already built.</p>
+        
+        <div class="trie-visual">
+            <div class="node-row">
+                <div class="trie-node" id="node-root" onclick="nodeClick('root')">Root</div>
+            </div>
+            <div class="node-row">
+                <div class="trie-node" id="node-t" onclick="nodeClick('t')">t</div>
+                <div class="trie-node" id="node-a" onclick="nodeClick('a')">a</div>
+            </div>
+            <div class="node-row">
+                <div class="trie-node" id="node-o" onclick="nodeClick('o')">o</div>
+                <div class="trie-node" id="node-e" onclick="nodeClick('e')">e</div>
+            </div>
+            <div class="node-row">
+                <div class="trie-node" id="node-d" onclick="nodeClick('d')">d</div>
+                <div class="trie-node" id="node-n" onclick="nodeClick('n')">n</div>
+                <div class="trie-node" id="node-s" onclick="nodeClick('s')">s</div>
+            </div>
+        </div>
+        <p><em>Current Path: <span id="path-display">[]</span></em></p>
+        <button class="action-btn" onclick="checkVisual('q5')">Submit Path</button>
+        <div class="feedback" id="f5"></div>
+    </div>
+
+    <div class="question-card" id="q6">
+        <h2>6. Deletion Logic</h2>
+        <p>Consider a Trie containing the words: <strong>"cat", "ca"</strong>.</p>
+        <p>You call <code>remove("cat")</code>. Based on the recursive logic in the slides, what happens to the node <code>'t'</code> and the node <code>'a'</code>?</p>
+        <ul class="options">
+            <li><button class="btn" onclick="selectOption('q6', 0)">Both 't' and 'a' are physically deleted from memory.</button></li>
+            <li><button class="btn" onclick="selectOption('q6', 1)">Node 't' is deleted. Node 'a' is kept, and its <code>is_end_of_word</code> remains True.</button></li>
+            <li><button class="btn" onclick="selectOption('q6', 2)">Node 't' is deleted. Node 'a' is kept, but its <code>is_end_of_word</code> is set to False.</button></li>
+            <li><button class="btn" onclick="selectOption('q6', 3)">Only the <code>is_end_of_word</code> flag on 't' is set to False; no nodes are deleted.</button></li>
+        </ul>
+        <div class="feedback" id="f6"></div>
+    </div>
+
+    <div class="question-card" id="q7">
+        <h2>7. Autocomplete (Part 2)</h2>
+        <p>To implement autocomplete, the method <code>words_with_prefix(prefix)</code> is used. Which helper method is called first to locate the starting point of the traversal?</p>
+        <ul class="options">
+            <li><button class="btn" onclick="selectOption('q7', 0)"><code>collect_words(node, ...)</code></button></li>
+            <li><button class="btn" onclick="selectOption('q7', 1)"><code>find_last_node_of(prefix)</code></button></li>
+            <li><button class="btn" onclick="selectOption('q7', 2)"><code>insert(prefix)</code></button></li>
+            <li><button class="btn" onclick="selectOption('q7', 3)"><code>get_child(prefix)</code></button></li>
+        </ul>
+        <div class="feedback" id="f7"></div>
+    </div>
+
+    <div class="question-card" id="results">
+        <h2>Exam Complete</h2>
+        <p id="score-display">You scored X out of Y.</p>
+        <p id="message"></p>
+        <button class="action-btn" onclick="location.reload()">Retake Exam</button>
+    </div>
+
+    <div class="nav-btns">
+        <button class="action-btn" id="prevBtn" onclick="navigate(-1)" disabled>Previous</button>
+        <button class="action-btn" id="nextBtn" onclick="navigate(1)">Next</button>
+    </div>
+</div>
+
+<script>
+    // State management
+    let currentQuestion = 1;
+    const totalQuestions = 7;
+    const answers = {
+        q1: null, q2: null, q3: null, q4: null, q5: [], q6: null, q7: null
+    };
+
+    // Correct Answers Data
+    const key = {
+        q1: 1, // Root is empty char
+        q2: 2, // Array = direct access, Hash = sparse opt
+        q3: 1, // O(l)
+        q6: 1, // 't' deleted, 'a' kept as end of 'ca'
+        q7: 1  // find_last_node_of
+    };
+
+    const codeKey = {
+        'q4-i1': "ord('a')", // or just 'a' depending on interpretation, we'll strip logic
+        'q4-i2': "None",
+        'q4-i3': "children",
+        'q4-i4': "is_end_of_word"
+    };
+
+    // Navigation
+    function navigate(direction) {
+        // Hide current
+        document.getElementById(`q${currentQuestion}`).classList.remove('active');
+        
+        currentQuestion += direction;
+        
+        // Show next
+        const nextCard = document.getElementById(`q${currentQuestion}`) || document.getElementById('results');
+        nextCard.classList.add('active');
+
+        // Update progress
+        const percent = ((currentQuestion - 1) / totalQuestions) * 100;
+        document.querySelector('.progress-fill').style.width = `${percent}%`;
+
+        // Button state
+        document.getElementById('prevBtn').disabled = currentQuestion === 1;
+        
+        if (currentQuestion > totalQuestions) {
+            calculateScore();
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('prevBtn').style.display = 'none';
+        }
+    }
+
+    // MCQ Logic
+    function selectOption(qId, index) {
+        if (answers[qId] !== null) return; // Prevent changing after selection
+        answers[qId] = index;
+        
+        const feedback = document.getElementById(qId.replace('q', 'f'));
+        const options = document.querySelectorAll(`#${qId} .btn`);
+        
+        options[index].classList.add('selected');
+        
+        if (index === key[qId]) {
+            feedback.innerHTML = "<strong>Correct!</strong> " + getExplanation(qId);
+            feedback.className = "feedback correct";
+        } else {
+            feedback.innerHTML = "<strong>Incorrect.</strong> " + getExplanation(qId);
+            feedback.className = "feedback incorrect";
+        }
+        feedback.style.display = 'block';
+    }
+
+    // Code Logic
+    function checkCode(qId) {
+        const i1 = document.getElementById('q4-i1').value.trim();
+        const i2 = document.getElementById('q4-i2').value.trim();
+        const i3 = document.getElementById('q4-i3').value.trim();
+        const i4 = document.getElementById('q4-i4').value.trim();
+
+        const f = document.getElementById('f4');
+        
+        let correct = true;
+        if (!i1.includes("ord('a')")) correct = false;
+        if (i2 !== "None") correct = false;
+        if (i3 !== "children") correct = false;
+        if (i4 !== "is_end_of_word") correct = false;
+
+        if (correct) {
+            f.innerHTML = "<strong>Correct!</strong> Code structure matches the slides.";
+            f.className = "feedback correct";
+            answers.q4 = true;
+        } else {
+            f.innerHTML = "<strong>Incorrect.</strong> Check slide 190. Remember: <code>ord(ch) - ord('a')</code>, checking for <code>None</code>, accessing <code>children</code>, and setting <code>is_end_of_word</code>.";
+            f.className = "feedback incorrect";
+            answers.q4 = false;
+        }
+        f.style.display = 'block';
+    }
+
+    // Visual Logic
+    function nodeClick(val) {
+        // Prevent dupes for simplicity in this logic
+        if (answers.q5.includes(val)) return;
+        
+        answers.q5.push(val);
+        document.getElementById(`node-${val}`).classList.add('active');
+        document.getElementById('path-display').innerText = answers.q5.join(" -> ");
+    }
+
+    function checkVisual(qId) {
+        // Path for "ten": Root -> t -> e -> n
+        const correctPath = ['root', 't', 'e', 'n'];
+        const userPath = answers.q5;
+        const f = document.getElementById('f5');
+
+        const isMatch = userPath.length === correctPath.length && 
+                        userPath.every((value, index) => value === correctPath[index]);
+
+        if (isMatch) {
+            f.innerHTML = "<strong>Correct!</strong> You reused the existing 't' node and traversed down to create 'e' and 'n'.";
+            f.className = "feedback correct";
+        } else {
+            f.innerHTML = "<strong>Incorrect.</strong> To insert 'ten', start at Root. Since 't' exists (from 'to'/'ted'), follow it. Then create/follow 'e', then 'n'.";
+            f.className = "feedback incorrect";
+        }
+        f.style.display = 'block';
+    }
+
+    // Explanations
+    function getExplanation(qId) {
+        switch(qId) {
+            case 'q1': return "[Source: 10] The root is an empty character (or just a starting node), not the first letter.";
+            case 'q2': return "[Source: 36] Slides use `[None] * 26`. Arrays give O(1) access. Hash tables are typically more space-efficient for sparse data but have hashing overhead.";
+            case 'q3': return "[Source: 179, 372, 544] Complexity is O(l) where l is word length.";
+            case 'q6': return "[Source: 546-560] 'cat' shares 'ca' with the word 'ca'. We unmark 't' as end-of-word. 't' has no children, so we delete it. We move up to 'a'. 'a' is the end of word 'ca', so we stop deleting.";
+            case 'q7': return "[Source: 629] The autocomplete logic first calls `find_last_node_of(prefix)` to get to the subtree, then `collect_words` to gather results.";
+            default: return "";
+        }
+    }
+
+    function calculateScore() {
+        let score = 0;
+        if(answers.q1 === key.q1) score++;
+        if(answers.q2 === key.q2) score++;
+        if(answers.q3 === key.q3) score++;
+        if(answers.q4 === true) score++;
+        
+        // visual check
+        const correctPath = ['root', 't', 'e', 'n'];
+        const userPath = answers.q5;
+        const isMatch = userPath.length === correctPath.length && userPath.every((v, i) => v === correctPath[i]);
+        if(isMatch) score++;
+
+        if(answers.q6 === key.q6) score++;
+        if(answers.q7 === key.q7) score++;
+
+        const display = document.getElementById('score-display');
+        display.innerText = `You scored ${score} out of ${totalQuestions}.`;
+        
+        const msg = document.getElementById('message');
+        if (score === totalQuestions) msg.innerText = "Perfect! You have mastered the Trie structure.";
+        else if (score > 4) msg.innerText = "Good job! Review the slides for the ones you missed.";
+        else msg.innerText = "You might want to review the slides again, specifically the recursive remove logic and complexity.";
+    }
+</script>
+
+</body>
+</html>

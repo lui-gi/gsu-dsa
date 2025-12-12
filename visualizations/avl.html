@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVL Tree Visualization</title>
+    <style>
+        /* GSU Color Palette */
+        :root {
+            --gsu-blue: #0039A6;
+            --gsu-dark: #1f2a36;
+            --gsu-gray: #777777;
+            --light-bg: #f4f4f4;
+            --highlight: #CC0000;
+            --success: #28a745;
+            --node-radius: 22;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: var(--light-bg);
+            color: #333;
+        }
+
+        header {
+            background-color: var(--gsu-blue);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h1 { margin: 0; font-size: 1.6rem; }
+        p { margin: 5px 0 0; opacity: 0.9; font-size: 0.9rem; }
+
+        /* Controls */
+        .controls {
+            background: white;
+            padding: 1rem;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #ddd;
+            z-index: 10;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 80px;
+        }
+
+        button {
+            background-color: var(--gsu-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #00256e; }
+        button:disabled { background-color: var(--gsu-gray); cursor: not-allowed; }
+        button.danger { background-color: var(--highlight); }
+        button.secondary { background-color: #6c757d; }
+
+        /* Main Layout */
+        #main-container {
+            display: flex;
+            flex-grow: 1;
+            padding: 10px;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        #canvas-wrapper {
+            flex-grow: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* Sidebar */
+        #sidebar {
+            width: 300px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            flex-shrink: 0;
+            gap: 10px;
+        }
+
+        #sidebar h3 { margin-top: 0; color: var(--gsu-blue); text-align: center; }
+
+        .log-box {
+            flex-grow: 1;
+            border: 1px solid #ddd;
+            padding: 10px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+            background: #fafafa;
+            border-radius: 4px;
+        }
+
+        .log-entry { margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid #eee; }
+        .log-entry strong { color: var(--gsu-blue); }
+        .log-entry .bf { color: #e67e22; font-weight: bold; }
+        .log-entry .rotate { color: var(--highlight); font-weight: bold; }
+
+        .legend {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            pointer-events: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .legend-item { display: flex; align-items: center; margin-bottom: 4px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; display: inline-block; }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>AVL Tree Visualization</h1>
+    <p>Self-Balancing Binary Search Tree & Rotations</p>
+</header>
+
+<div class="controls">
+    <div class="control-group">
+        <input type="number" id="nodeValue" placeholder="#" onkeypress="handleEnter(event)">
+        <button onclick="insertNode()">Insert</button>
+    </div>
+
+    <div class="control-group">
+        <button class="secondary" onclick="loadCase('LL')">Test LL</button>
+        <button class="secondary" onclick="loadCase('RR')">Test RR</button>
+        <button class="secondary" onclick="loadCase('LR')">Test LR</button>
+        <button class="secondary" onclick="loadCase('RL')">Test RL</button>
+    </div>
+
+    <div class="control-group">
+        <button class="danger" onclick="clearTree()">Clear</button>
+    </div>
+
+    <div class="control-group">
+        <label>Speed:</label>
+        <input type="range" id="speedRange" min="1" max="10" value="6" style="width: 80px;">
+    </div>
+</div>
+
+<div id="main-container">
+    <div id="canvas-wrapper">
+        <canvas id="treeCanvas"></canvas>
+        <div class="legend">
+            <div class="legend-item"><span class="dot" style="background:#0039A6"></span>Balanced</div>
+            <div class="legend-item"><span class="dot" style="background:#CC0000"></span>Unbalanced (Pivot)</div>
+            <div class="legend-item"><span class="dot" style="background:#ff9f43"></span>Child Involved</div>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <h3>Operations Log</h3>
+        <div id="log" class="log-box"></div>
+    </div>
+</div>
+
+<script>
+    // --- AVL Tree Logic ---
+
+    class Node {
+        constructor(value) {
+            this.value = value;
+            this.left = null;
+            this.right = null;
+            this.height = 1;
+            
+            // Visual Properties
+            this.x = 0;
+            this.y = 0;
+            this.targetX = 0;
+            this.targetY = 0;
+            this.highlight = null; // 'pivot', 'child', or null
+        }
+    }
+
+    let root = null;
+    let animationQueue = [];
+    let isAnimating = false;
+
+    // --- Core AVL Methods ---
+
+    function getHeight(node) {
+        return node ? node.height : 0;
+    }
+
+    function getBalance(node) {
+        return node ? getHeight(node.left) - getHeight(node.right) : 0;
+    }
+
+    function updateHeight(node) {
+        node.height = 1 + Math.max(getHeight(node.left), getHeight(node.right));
+    }
+
+    // Rotations
+    function rightRotate(y) {
+        let x = y.left;
+        let T2 = x.right;
+
+        // Visual Snapshot before rotation
+        queueStep('highlight', { pivot: y, child: x }, `Preparing Right Rotation on ${y.value}`);
+
+        // Perform rotation
+        x.right = y;
+        y.left = T2;
+
+        updateHeight(y);
+        updateHeight(x);
+
+        // Visual Snapshot after rotation logic (tree structure changed)
+        queueStep('rotate', null, `Right Rotation Complete. New root of subtree: ${x.value}`);
+
+        return x;
+    }
+
+    function leftRotate(x) {
+        let y = x.right;
+        let T2 = y.left;
+
+        queueStep('highlight', { pivot: x, child: y }, `Preparing Left Rotation on ${x.value}`);
+
+        y.left = x;
+        x.right = T2;
+
+        updateHeight(x);
+        updateHeight(y);
+
+        queueStep('rotate', null, `Left Rotation Complete. New root of subtree: ${y.value}`);
+
+        return y;
+    }
+
+    function insert(node, value) {
+        // 1. Standard BST Insert
+        if (!node) {
+            queueStep('insert', value, `Inserted ${value}`);
+            return new Node(value);
+        }
+
+        if (value < node.value) {
+            node.left = insert(node.left, value);
+        } else if (value > node.value) {
+            node.right = insert(node.right, value);
+        } else {
+            return node; // No duplicates
+        }
+
+        // 2. Update Height
+        updateHeight(node);
+
+        // 3. Get Balance Factor
+        let balance = getBalance(node);
+
+        // 4. Check for Imbalance
+        
+        // Left Left Case
+        if (balance > 1 && value < node.left.value) {
+            queueStep('imbalance', { node: node, type: 'LL' }, `Imbalance at ${node.value} (BF: ${balance}). Case: Left-Left`);
+            return rightRotate(node);
+        }
+
+        // Right Right Case
+        if (balance < -1 && value > node.right.value) {
+            queueStep('imbalance', { node: node, type: 'RR' }, `Imbalance at ${node.value} (BF: ${balance}). Case: Right-Right`);
+            return leftRotate(node);
+        }
+
+        // Left Right Case
+        if (balance > 1 && value > node.left.value) {
+            queueStep('imbalance', { node: node, type: 'LR' }, `Imbalance at ${node.value} (BF: ${balance}). Case: Left-Right`);
+            queueStep('msg', null, `Performing Left Rotation on left child ${node.left.value} first...`);
+            node.left = leftRotate(node.left);
+            return rightRotate(node);
+        }
+
+        // Right Left Case
+        if (balance < -1 && value < node.right.value) {
+            queueStep('imbalance', { node: node, type: 'RL' }, `Imbalance at ${node.value} (BF: ${balance}). Case: Right-Left`);
+            queueStep('msg', null, `Performing Right Rotation on right child ${node.right.value} first...`);
+            node.right = rightRotate(node.right);
+            return leftRotate(node);
+        }
+
+        return node;
+    }
+
+    // --- Visualization Logic ---
+
+    function queueStep(type, data, msg) {
+        // Deep copy of tree structure logic needed? 
+        // We can just trigger a re-layout calculation based on current root state
+        // because JavaScript objects are references. 
+        // However, we want to see the state *before* the rotation completes in the logic?
+        // Actually, the recursive calls happen fast. We need to snapshot the tree.
+        // For simplicity in this single-file demo, we will let the logic finish 
+        // but inject 'wait' steps or structure updates into the queue.
+        
+        // Since we modify the tree pointers directly, the 'intermediate' states (like mid-double rotation)
+        // are transient. We should queue a snapshot of the tree layout.
+        
+        // BUT, generating a full snapshot of nodes is expensive.
+        // Instead, we will perform the logic, and the 'queue' will mostly be text/highlight instructions
+        // combined with a request to "Draw current state of Root".
+        // Wait, if we run full insertion logic, 'root' becomes the final balanced tree instantly.
+        // We can't animate the intermediate steps if we don't pause execution.
+        
+        // Correct Approach for Animation: 
+        // We cannot use standard recursion for animation easily. 
+        // Ideally we would use an async/await approach inside the insert function itself.
+    }
+
+    // Refactored Insert to be Async for Animation
+    async function insertAsyncWithAnimation(value) {
+        // We need a helper that returns a promise we can await
+        const speed = () => 1000 - (document.getElementById('speedRange').value * 90);
+        const wait = () => new Promise(r => setTimeout(r, speed()));
+
+        async function recursiveInsert(node, val) {
+            if (!node) {
+                log(`Inserted ${val}`);
+                return new Node(val);
+            }
+
+            if (val < node.value) {
+                node.left = await recursiveInsert(node.left, val);
+            } else if (val > node.value) {
+                node.right = await recursiveInsert(node.right, val);
+            } else {
+                return node;
+            }
+
+            updateHeight(node);
+            
+            // Re-layout and draw after standard BST insertion part
+            recalculateLayout(root);
+            drawTree();
+            
+            let balance = getBalance(node);
+
+            // Imbalance Checks
+            if (balance > 1 && val < node.left.value) {
+                log(`Imbalance at ${node.value} (BF=${balance}). Case: Left-Left. Rotating Right.`);
+                node.highlight = 'pivot';
+                node.left.highlight = 'child';
+                drawTree();
+                await wait();
+                
+                let newNode = rightRotate(node);
+                clearHighlights(newNode);
+                recalculateLayout(root); // Recalc full tree from root? No, we need to update pointers first.
+                // In recursion, we return 'newNode' which updates parent's pointer.
+                // But 'root' global might not be updated yet if we are deep.
+                // Visual glitch possibility: We draw 'root', but the link is not updated until return.
+                // Hack: We can't easily animate the pointer swap without complex state.
+                // We will just wait, then return new node, then re-draw in caller.
+                return newNode;
+            }
+
+            if (balance < -1 && val > node.right.value) {
+                log(`Imbalance at ${node.value} (BF=${balance}). Case: Right-Right. Rotating Left.`);
+                node.highlight = 'pivot';
+                node.right.highlight = 'child';
+                drawTree();
+                await wait();
+
+                let newNode = leftRotate(node);
+                clearHighlights(newNode);
+                return newNode;
+            }
+
+            if (balance > 1 && val > node.left.value) {
+                log(`Imbalance at ${node.value} (BF=${balance}). Case: Left-Right.`);
+                node.highlight = 'pivot';
+                node.left.highlight = 'child';
+                drawTree();
+                await wait();
+
+                log(`1. Left Rotate on Child ${node.left.value}`);
+                node.left = leftRotate(node.left);
+                recalculateLayout(root); // Update visual for first partial rotation
+                drawTree();
+                await wait();
+
+                log(`2. Right Rotate on Pivot ${node.value}`);
+                let newNode = rightRotate(node);
+                clearHighlights(newNode);
+                return newNode;
+            }
+
+            if (balance < -1 && val < node.right.value) {
+                log(`Imbalance at ${node.value} (BF=${balance}). Case: Right-Left.`);
+                node.highlight = 'pivot';
+                node.right.highlight = 'child';
+                drawTree();
+                await wait();
+
+                log(`1. Right Rotate on Child ${node.right.value}`);
+                node.right = rightRotate(node.right);
+                recalculateLayout(root);
+                drawTree();
+                await wait();
+
+                log(`2. Left Rotate on Pivot ${node.value}`);
+                let newNode = leftRotate(node);
+                clearHighlights(newNode);
+                return newNode;
+            }
+
+            return node;
+        }
+
+        // Start
+        root = await recursiveInsert(root, value);
+        recalculateLayout(root);
+        drawTree();
+        log(`Insertion of ${value} Complete.`);
+    }
+
+    function clearHighlights(node) {
+        if(!node) return;
+        node.highlight = null;
+        if(node.left) node.left.highlight = null;
+        if(node.right) node.right.highlight = null;
+    }
+
+    // --- Visualization & Layout ---
+
+    const canvas = document.getElementById('treeCanvas');
+    const ctx = canvas.getContext('2d');
+    const NODE_RADIUS = 22;
+    const LEVEL_HEIGHT = 60;
+
+    function resize() {
+        canvas.width = document.getElementById('canvas-wrapper').clientWidth;
+        canvas.height = document.getElementById('canvas-wrapper').clientHeight;
+        if(root) {
+            recalculateLayout(root);
+            drawTree();
+        }
+    }
+    window.addEventListener('resize', resize);
+
+    function recalculateLayout(node) {
+        if (!node) return;
+        
+        // Simple recursive layout
+        // Assign X coordinates based on in-order traversal index? 
+        // Or simple width partitioning. Width partitioning is better for tree shape.
+        
+        const width = canvas.width;
+        
+        // Reset or calc positions?
+        // We need a helper to calculate the width of each subtree to center parents.
+        
+        // Helper: Assign coordinates
+        // x: center x of this node
+        // y: center y of this node
+        // spread: how much space is available for this node's subtree
+        
+        function setCoords(n, x, y, offset) {
+            if (!n) return;
+            n.x = x;
+            n.y = y;
+            
+            // offset diminishes as we go down
+            setCoords(n.left, x - offset, y + LEVEL_HEIGHT, offset / 2);
+            setCoords(n.right, x + offset, y + LEVEL_HEIGHT, offset / 2);
+        }
+
+        // Initial spread is roughly width / 4
+        setCoords(node, width / 2, 40, width / 4);
+    }
+
+    function drawTree() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!root) return;
+
+        // Edges
+        function drawEdges(node) {
+            if (!node) return;
+            if (node.left) {
+                ctx.beginPath();
+                ctx.moveTo(node.x, node.y);
+                ctx.lineTo(node.left.x, node.left.y);
+                ctx.strokeStyle = '#999';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                drawEdges(node.left);
+            }
+            if (node.right) {
+                ctx.beginPath();
+                ctx.moveTo(node.x, node.y);
+                ctx.lineTo(node.right.x, node.right.y);
+                ctx.strokeStyle = '#999';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                drawEdges(node.right);
+            }
+        }
+        drawEdges(root);
+
+        // Nodes
+        function drawNodes(node) {
+            if (!node) return;
+
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, NODE_RADIUS, 0, 2 * Math.PI);
+            
+            // Color Logic
+            if (node.highlight === 'pivot') {
+                ctx.fillStyle = '#CC0000'; // Unbalanced/Pivot
+                ctx.strokeStyle = '#a30000';
+            } else if (node.highlight === 'child') {
+                ctx.fillStyle = '#ff9f43'; // Child involved
+                ctx.strokeStyle = '#e67e22';
+            } else {
+                ctx.fillStyle = '#0039A6'; // Standard
+                ctx.strokeStyle = '#00256e';
+            }
+            
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Text: Value
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(node.value, node.x, node.y);
+
+            // Text: Balance Factor
+            let bf = getBalance(node);
+            ctx.fillStyle = '#555';
+            ctx.font = '11px Arial';
+            // Show to the right of node
+            ctx.fillText(`BF: ${bf}`, node.x + NODE_RADIUS + 15, node.y);
+
+            drawNodes(node.left);
+            drawNodes(node.right);
+        }
+        drawNodes(root);
+    }
+
+    // --- UI Interactions ---
+
+    function log(msg) {
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        div.innerHTML = msg;
+        const container = document.getElementById('log');
+        container.prepend(div);
+    }
+
+    async function insertNode() {
+        if(isAnimating) return;
+        const input = document.getElementById('nodeValue');
+        const val = parseInt(input.value);
+        if (isNaN(val)) return;
+        
+        isAnimating = true;
+        await insertAsyncWithAnimation(val);
+        isAnimating = false;
+        input.value = '';
+        input.focus();
+    }
+
+    function handleEnter(e) {
+        if (e.key === 'Enter') insertNode();
+    }
+
+    async function clearTree() {
+        if(isAnimating) return;
+        root = null;
+        document.getElementById('log').innerHTML = '';
+        drawTree();
+    }
+
+    async function loadCase(type) {
+        if(isAnimating) return;
+        await clearTree();
+        
+        if (type === 'LL') {
+            log("<strong>Loading Left-Left Case</strong> (30 -> 20 -> 10)");
+            await insertAsyncWithAnimation(30);
+            await insertAsyncWithAnimation(20);
+            await insertAsyncWithAnimation(10);
+        } else if (type === 'RR') {
+            log("<strong>Loading Right-Right Case</strong> (10 -> 20 -> 30)");
+            await insertAsyncWithAnimation(10);
+            await insertAsyncWithAnimation(20);
+            await insertAsyncWithAnimation(30);
+        } else if (type === 'LR') {
+            log("<strong>Loading Left-Right Case</strong> (30 -> 10 -> 20)");
+            await insertAsyncWithAnimation(30);
+            await insertAsyncWithAnimation(10);
+            await insertAsyncWithAnimation(20);
+        } else if (type === 'RL') {
+            log("<strong>Loading Right-Left Case</strong> (10 -> 30 -> 20)");
+            await insertAsyncWithAnimation(10);
+            await insertAsyncWithAnimation(30);
+            await insertAsyncWithAnimation(20);
+        }
+    }
+
+    // Init
+    resize();
+
+</script>
+</body>
+</html>

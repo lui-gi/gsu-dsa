@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Theory Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        pre, code { font-family: 'Fira Code', monospace; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .option-card:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .progress-bar { transition: width 0.5s ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-indigo-700 text-white p-4 shadow-md">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <i class="fas fa-network-wired"></i>
+                Graph Algorithms Quiz
+            </h1>
+            <div id="progress-container" class="hidden text-sm font-medium bg-indigo-800 px-3 py-1 rounded-full">
+                <span id="current-q-num">1</span>/<span id="total-q-num">10</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-3xl">
+        
+        <!-- Start Screen -->
+        <div id="start-screen" class="bg-white rounded-xl shadow-lg p-8 text-center fade-in">
+            <div class="mb-6">
+                <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Lecture Series Quiz</h2>
+                <p class="text-gray-600 mb-6">Test your knowledge based strictly on the provided lecture slides (10.1 - 11.2).</p>
+            </div>
+            
+            <div class="bg-indigo-50 text-left p-6 rounded-lg mb-8 border border-indigo-100">
+                <h3 class="font-semibold text-indigo-800 mb-2">Lecture Topics:</h3>
+                <ul class="list-disc list-inside text-sm text-indigo-700 space-y-1">
+                    <li><strong>10.1:</strong> Adj Matrix vs List Complexity</li>
+                    <li><strong>10.2:</strong> DFS (Iterative Stack Implementation)</li>
+                    <li><strong>11.1:</strong> BFS & Topo Sort Basics</li>
+                    <li><strong>11.2:</strong> Dijkstra's & Topo Sort (Finish Time/Stack)</li>
+                </ul>
+            </div>
+
+            <button onclick="startQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-md text-lg w-full sm:w-auto">
+                Start Quiz
+            </button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden">
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-6">
+                <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full progress-bar" style="width: 0%"></div>
+            </div>
+
+            <div id="question-container" class="bg-white rounded-xl shadow-lg overflow-hidden fade-in">
+                <div class="p-6 md:p-8 border-b border-gray-100">
+                    <span id="topic-tag" class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full uppercase font-semibold tracking-wide mb-3">Topic</span>
+                    <h2 id="question-text" class="text-xl md:text-2xl font-bold text-gray-800 leading-snug"></h2>
+                    <div id="code-snippet-container" class="mt-4 hidden">
+                        <pre class="bg-slate-800 text-slate-100 p-4 rounded-lg text-sm overflow-x-auto"><code id="code-snippet"></code></pre>
+                    </div>
+                </div>
+                <div id="options-container" class="p-6 md:p-8 space-y-3 bg-gray-50"></div>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen" class="hidden fade-in">
+            <div class="bg-white rounded-xl shadow-lg p-8 text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Quiz Complete!</h2>
+                <div class="flex justify-center items-center mb-8 mt-6">
+                    <div class="text-5xl font-bold text-indigo-600" id="final-score">0%</div>
+                </div>
+                <div class="flex gap-4 justify-center">
+                    <button onclick="location.reload()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg transition-colors">Retake</button>
+                    <button onclick="showReview()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Review Answers</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Review Section -->
+        <div id="review-section" class="hidden space-y-6">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Detailed Review</h3>
+            <div id="review-container" class="space-y-6"></div>
+        </div>
+    </main>
+
+    <script>
+        // Questions derived strictly from uploaded PPTX content
+        const questions = [
+            {
+                id: 1,
+                topic: "Complexity (Slide 10.1)",
+                question: "According to Slide 10.1, what is the Time Complexity to 'Add a node' in an Adjacency Matrix representation?",
+                options: [
+                    "O(1)",
+                    "O(n)",
+                    "O(n^2)",
+                    "O(n + m)"
+                ],
+                correct: 2,
+                explanation: "Slide 10.1 explicitly states that adding a node to an Adjacency Matrix takes O(n^2) time because you must resize the entire square matrix."
+            },
+            {
+                id: 2,
+                topic: "Complexity (Slide 10.1)",
+                question: "Comparing Adjacency Matrix vs. Adjacency List (Slide 10.1): Which operation is O(1) for a Matrix but O(n) for a List?",
+                options: [
+                    "Adding a new node",
+                    "Checking if two specific nodes are adjacent",
+                    "Traversing all neighbors",
+                    "Calculating the space complexity"
+                ],
+                correct: 1,
+                explanation: "Checking adjacency is O(1) in a Matrix (direct index access `A[i][j]`). In a List, it is O(n) (specifically O(degree)) as you must iterate through the list of neighbors."
+            },
+            {
+                id: 3,
+                topic: "DFS Implementation (Slide 10.2)",
+                question: "In the 'Updated Version' of Iterative DFS (Slide 10.2), when is a node marked as 'visited'?",
+                options: [
+                    "When it is first pushed onto the stack",
+                    "Immediately after checking if the stack is empty",
+                    "After popping it from the stack, if it hasn't been visited yet",
+                    "After visiting all of its neighbors"
+                ],
+                correct: 2,
+                explanation: "The slide shows the logic: 1. Pop node. 2. Is node visited? No! => Make it visited and add to traversal. This happens *after* popping, not during pushing."
+            },
+            {
+                id: 4,
+                topic: "Topological Sort (Slide 11.2)",
+                question: "Slide 11.2 ('Idea 2') suggests using a specific data structure to store the topological order. What is it and why?",
+                options: [
+                    "A Queue, because it is First-In-First-Out",
+                    "A Stack, because the node that finishes first comes last in the ordering",
+                    "A Priority Queue, to sort by node weights",
+                    "A Hash Map, to store finish times"
+                ],
+                correct: 1,
+                explanation: "The slide states: 'The node that finishes first comes last... Thus, we can use a stack to store and retrieve the topological order.'"
+            },
+            {
+                id: 5,
+                topic: "Topological Sort (Slide 11.1)",
+                question: "According to Slide 11.1, topological ordering is impossible if:",
+                options: [
+                    "The graph is unweighted",
+                    "The graph is disconnected",
+                    "The graph is not a DAG (Directed Acyclic Graph)",
+                    "The graph has more edges than nodes"
+                ],
+                correct: 2,
+                explanation: "Slide 11.1 explicitly states: 'The graph must have to be a DIRECTED ACYCLIC graph (DAG). Topological ordering is not possible for other types of graphs.'"
+            },
+            {
+                id: 6,
+                topic: "BFS Implementation (Slide 11.1)",
+                question: "Which data structure does Breadth First Search (BFS) use to manage nodes?",
+                options: [
+                    "Stack (LIFO)",
+                    "Queue (FIFO)",
+                    "Heap (Priority)",
+                    "Tree"
+                ],
+                correct: 1,
+                explanation: "Slide 11.1 visualizes BFS using a Queue with 'front' and 'back' pointers."
+            },
+            {
+                id: 7,
+                topic: "Dijkstra's Algorithm (Slide 11.2)",
+                question: "In the initialization phase of Dijkstra's algorithm (Slide 11.2), what is the weight assigned to the Start Node and all other nodes?",
+                options: [
+                    "Start: +inf, Others: 0",
+                    "Start: 0, Others: 0",
+                    "Start: 0, Others: +inf",
+                    "Start: 1, Others: -1"
+                ],
+                correct: 2,
+                explanation: "The slide visual shows the 'Node weight' table initialized with 0 for the start node and +inf for all other nodes."
+            },
+            {
+                id: 8,
+                topic: "Dijkstra's Logic (Slide 11.2)",
+                question: "When visiting a neighbor in Dijkstra's, under what condition do we update the neighbor's weight?",
+                options: [
+                    "If (current_node_weight + edge_weight) < neighbor_current_weight",
+                    "If (current_node_weight + edge_weight) > neighbor_current_weight",
+                    "If the neighbor has not been visited yet, regardless of weight",
+                    "If the edge weight is positive"
+                ],
+                correct: 0,
+                explanation: "The slide logic demonstrates updating only 'If the way from start to neighbor through current is shorter', which mathematically is `current + edge < old_weight`."
+            },
+            {
+                id: 9,
+                topic: "Graph Terminology (Slide 10.1)",
+                question: "Based on Slide 10.1, what is the definition of 'adjacent edges'?",
+                options: [
+                    "Two edges that connect the same two nodes",
+                    "Two edges that share a common node",
+                    "Two edges that have the same weight",
+                    "Two edges that cross each other in a visual diagram"
+                ],
+                correct: 1,
+                explanation: "Slide 10.1 defines: 'Two edges are adjacent if they share a node'."
+            },
+            {
+                id: 10,
+                topic: "DFS vs Topo Sort (Slide 11.2)",
+                question: "Slide 11.2 states that we are 'done' visiting a node in Topological Sort when:",
+                options: [
+                    "It has been added to the queue",
+                    "We first discover it",
+                    "It has no unvisited neighbors",
+                    "Its weight is minimized"
+                ],
+                correct: 2,
+                explanation: "Slide 11.2 states: 'We are done when there are no unvisited neighbors. So, whenever we discover that a node doesn’t have any unvisited neighbor, we can add that to the result.'"
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let userAnswers = new Array(questions.length).fill(null);
+
+        // DOM Elements
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const progressBar = document.getElementById('progress-bar');
+        const currentQNum = document.getElementById('current-q-num');
+        const totalQNum = document.getElementById('total-q-num');
+        const topicTag = document.getElementById('topic-tag');
+        const codeContainer = document.getElementById('code-snippet-container');
+        const codeBlock = document.getElementById('code-snippet');
+        const reviewSection = document.getElementById('review-section');
+        const reviewContainer = document.getElementById('review-container');
+
+        document.getElementById('total-q-num').innerText = questions.length;
+
+        function startQuiz() {
+            startScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            document.getElementById('progress-container').classList.remove('hidden');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = questions[currentQuestionIndex];
+            questionText.innerText = q.question;
+            topicTag.innerText = q.topic;
+            currentQNum.innerText = currentQuestionIndex + 1;
+            
+            if (q.code) {
+                codeContainer.classList.remove('hidden');
+                codeBlock.innerText = q.code;
+            } else {
+                codeContainer.classList.add('hidden');
+            }
+
+            const progress = ((currentQuestionIndex) / questions.length) * 100;
+            progressBar.style.width = `${progress}%`;
+
+            optionsContainer.innerHTML = '';
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = `option-card w-full text-left p-4 rounded-lg border border-gray-200 bg-white hover:border-indigo-500 hover:bg-indigo-50 transition-all font-medium text-gray-700`;
+                btn.innerText = opt;
+                btn.onclick = () => selectAnswer(index);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectAnswer(selectedIndex) {
+            userAnswers[currentQuestionIndex] = selectedIndex;
+            const buttons = optionsContainer.getElementsByTagName('button');
+            
+            for(let btn of buttons) {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+
+            buttons[selectedIndex].classList.remove('bg-white', 'opacity-50');
+            buttons[selectedIndex].classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+
+            setTimeout(() => {
+                if (selectedIndex === questions[currentQuestionIndex].correct) {
+                    score++;
+                }
+                nextQuestion();
+            }, 500);
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                const container = document.getElementById('question-container');
+                container.classList.remove('fade-in');
+                void container.offsetWidth; 
+                container.classList.add('fade-in');
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizScreen.classList.add('hidden');
+            document.getElementById('progress-container').classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            const percentage = Math.round((score / questions.length) * 100);
+            document.getElementById('final-score').innerText = `${percentage}%`;
+        }
+
+        function showReview() {
+            resultsScreen.classList.add('hidden');
+            reviewSection.classList.remove('hidden');
+            reviewContainer.innerHTML = '';
+            
+            questions.forEach((q, idx) => {
+                const userChoice = userAnswers[idx];
+                const isCorrect = userChoice === q.correct;
+                
+                const card = document.createElement('div');
+                card.className = `bg-white rounded-lg shadow p-6 border-l-4 ${isCorrect ? 'border-green-500' : 'border-red-500'}`;
+                
+                let optionsHtml = '';
+                q.options.forEach((opt, optIdx) => {
+                    let classes = "p-2 rounded mt-1 text-sm ";
+                    if (optIdx === q.correct) {
+                        classes += "bg-green-100 text-green-800 font-bold border border-green-300";
+                    } else if (optIdx === userChoice && !isCorrect) {
+                        classes += "bg-red-100 text-red-800 line-through border border-red-300";
+                    } else {
+                        classes += "text-gray-500";
+                    }
+                    optionsHtml += `<div class="${classes}">${opt} ${optIdx === q.correct ? '✓' : ''}</div>`;
+                });
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider ${isCorrect ? 'text-green-600' : 'text-red-600'}">
+                            ${isCorrect ? 'Correct' : 'Incorrect'}
+                        </span>
+                        <span class="text-xs text-gray-400">Q${idx + 1}</span>
+                    </div>
+                    <h4 class="font-bold text-gray-800 mb-2">${q.question}</h4>
+                    <div class="mt-3 mb-4 space-y-1">${optionsHtml}</div>
+                    <div class="bg-blue-50 p-3 rounded text-sm text-blue-800 border-l-2 border-blue-400">
+                        <span class="font-bold">Source:</span> ${q.topic}<br>
+                        <span class="font-bold">Explanation:</span> ${q.explanation}
+                    </div>
+                `;
+                reviewContainer.appendChild(card);
+            });
+
+            const backBtn = document.createElement('button');
+            backBtn.onclick = () => location.reload();
+            backBtn.className = "w-full bg-gray-800 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors mt-8 shadow-lg";
+            backBtn.innerText = "Restart Quiz";
+            reviewContainer.appendChild(backBtn);
+        }
+    </script>
+</body>
+</html>

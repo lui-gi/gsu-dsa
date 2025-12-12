@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Structures Exam: Non-Comparison Sorts</title>
+    <style>
+        :root {
+            --primary: #003366; /* GSU Blue */
+            --accent: #cc0000;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --success: #28a745;
+            --error: #dc3545;
+            --warning: #ffc107;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #e9ecef;
+            color: var(--dark);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+            min-height: 600px;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        h1 { margin: 0; color: var(--primary); }
+        .professor-note {
+            background-color: #e8f0fe;
+            border-left: 5px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 20px;
+            font-style: italic;
+            font-size: 0.95em;
+        }
+        .question-card {
+            display: none;
+        }
+        .question-card.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Options & Inputs */
+        .options label {
+            display: block;
+            background: #f8f9fa;
+            padding: 12px 15px;
+            margin: 8px 0;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .options label:hover {
+            background: #e2e6ea;
+            border-color: #adb5bd;
+        }
+        input[type="radio"] { margin-right: 12px; transform: scale(1.2); }
+        
+        .array-input-container {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .input-group span { font-size: 0.8em; color: #666; margin-bottom: 4px; }
+        .array-input {
+            width: 50px;
+            padding: 8px;
+            text-align: center;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 1.1em;
+            transition: border-color 0.3s;
+        }
+        .array-input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        /* Navigation Footer */
+        .nav-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #002244; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        button.secondary { background-color: #6c757d; }
+        button.secondary:hover { background-color: #5a6268; }
+        button.submit-btn { background-color: var(--success); }
+        button.submit-btn:hover { background-color: #218838; }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-bottom: 20px;
+        }
+        .progress-bar {
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .step-indicator {
+            text-align: right;
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* Code Blocks */
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+        }
+        code {
+            background-color: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #d63384;
+            font-weight: bold;
+        }
+
+        /* Results Section */
+        .result-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fff;
+        }
+        .result-card.correct { border-left: 5px solid var(--success); }
+        .result-card.incorrect { border-left: 5px solid var(--error); }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+        }
+        .badge.correct { background-color: var(--success); }
+        .badge.incorrect { background-color: var(--error); }
+        
+        .explanation {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 0.95em;
+        }
+        .explanation strong { color: var(--primary); }
+
+        .review-panel {
+            text-align: center;
+            padding: 20px;
+        }
+        .review-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .review-item {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .review-item.answered { background-color: #e3f2fd; border-color: var(--primary); color: var(--primary); }
+        .review-item.active { background-color: var(--primary); color: white; border-color: var(--primary); }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>CS Exam: Non-Comparison Sorts</h1>
+        <p>Professor: Gemini AI</p>
+    </div>
+
+    <!-- Intro Screen -->
+    <div id="intro-screen" class="question-card active">
+        <div class="professor-note">
+            "Welcome. This exam covers <strong>Counting Sort</strong> and <strong>Radix Sort</strong> based on your lecture slides. 
+            <br><br>
+            <strong>Instructions:</strong>
+            <ul>
+                <li>You may navigate freely between questions.</li>
+                <li>Your answers are saved automatically as you go.</li>
+                <li>Nothing is graded until you hit 'Submit Exam' on the final screen.</li>
+                <li>After submission, you will see a detailed breakdown of every answer.</li>
+            </ul>
+        </div>
+        <div style="text-align: center;">
+            <button onclick="startExam()">Begin Exam</button>
+        </div>
+    </div>
+
+    <!-- Exam Interface (Hidden initially) -->
+    <div id="exam-interface" style="display:none;">
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="step-indicator">Question <span id="q-current">1</span> of <span id="q-total">7</span></div>
+        </div>
+
+        <!-- Questions Container -->
+        <div id="questions-container">
+            <!-- Q1 -->
+            <div class="question-card" data-id="q1">
+                <h2>1. Counting Sort Efficiency</h2>
+                <p>Counting sort is efficient under specific conditions. Which of the following statements is <strong>FALSE</strong> regarding its complexity analysis as presented in the lecture?</p>
+                <div class="options">
+                    <label><input type="radio" name="q1" value="A"> It runs in O(n + k) time.</label>
+                    <label><input type="radio" name="q1" value="B"> It requires O(n) space complexity.</label>
+                    <label><input type="radio" name="q1" value="C"> It works well when k (range) is not significantly larger than n.</label>
+                    <label><input type="radio" name="q1" value="D"> It is a non-comparison based integer sorting algorithm.</label>
+                </div>
+            </div>
+
+            <!-- Q2 -->
+            <div class="question-card" data-id="q2">
+                <h2>2. Counting Sort: Count Array</h2>
+                <p>Given the input array: <code>[1, 4, 1, 2, 4, 3]</code> and <code>k = 4</code>.</p>
+                <p>Fill in the <code>count</code> array below (indices 0 to 4).</p>
+                <div class="array-input-container">
+                    <div class="input-group"><span>idx 0</span><input type="number" class="array-input" data-q="q2" data-idx="0"></div>
+                    <div class="input-group"><span>idx 1</span><input type="number" class="array-input" data-q="q2" data-idx="1"></div>
+                    <div class="input-group"><span>idx 2</span><input type="number" class="array-input" data-q="q2" data-idx="2"></div>
+                    <div class="input-group"><span>idx 3</span><input type="number" class="array-input" data-q="q2" data-idx="3"></div>
+                    <div class="input-group"><span>idx 4</span><input type="number" class="array-input" data-q="q2" data-idx="4"></div>
+                </div>
+            </div>
+
+            <!-- Q3 -->
+            <div class="question-card" data-id="q3">
+                <h2>3. Counting Sort: Prefix Sums</h2>
+                <p>Using the Count Array from the previous step: <code>[0, 2, 1, 1, 2]</code>.</p>
+                <p>Calculate the <strong>Prefix Sum</strong> array. (Logic: <code>count[i] = count[i] + count[i-1]</code>)</p>
+                <div class="array-input-container">
+                    <div class="input-group"><span>idx 0</span><input type="number" class="array-input" data-q="q3" data-idx="0"></div>
+                    <div class="input-group"><span>idx 1</span><input type="number" class="array-input" data-q="q3" data-idx="1"></div>
+                    <div class="input-group"><span>idx 2</span><input type="number" class="array-input" data-q="q3" data-idx="2"></div>
+                    <div class="input-group"><span>idx 3</span><input type="number" class="array-input" data-q="q3" data-idx="3"></div>
+                    <div class="input-group"><span>idx 4</span><input type="number" class="array-input" data-q="q3" data-idx="4"></div>
+                </div>
+            </div>
+
+            <!-- Q4 -->
+            <div class="question-card" data-id="q4">
+                <h2>4. Counting Sort: Placement Logic</h2>
+                <p>We are now populating the final output array.</p>
+                <p><strong>Part A:</strong> According to the algorithm in the slides, we iterate through the input array:</p>
+                <div class="options">
+                    <label><input type="radio" name="q4_dir" value="A"> From Start to End (index 0 to n-1)</label>
+                    <label><input type="radio" name="q4_dir" value="B"> From End to Start (index n-1 to 0)</label>
+                </div>
+                <br>
+                <p><strong>Part B:</strong> Suppose we are placing a key <code>4</code>. The prefix sum value <code>count[4]</code> is currently <code>6</code>.</p>
+                <p>What is the <strong>index</strong> in the output array where this 4 will be placed?</p>
+                <div style="text-align: center; margin-top: 10px;">
+                    Output Index: <input type="number" id="q4_idx" class="array-input" style="width: 60px;">
+                </div>
+            </div>
+
+            <!-- Q5 -->
+            <div class="question-card" data-id="q5">
+                <h2>5. Python Implementation</h2>
+                <p>Below is the Python implementation from the lecture. Identify the missing code in the final loop.</p>
+                <pre>
+    for i in range(len(input) - 1, -1, -1):
+        key = input[i]
+        count[key] -= 1
+        ______________________ = input[i]
+    return output
+                </pre>
+                <div class="options">
+                    <label><input type="radio" name="q5" value="A"> <code>output[i]</code></label>
+                    <label><input type="radio" name="q5" value="B"> <code>output[key]</code></label>
+                    <label><input type="radio" name="q5" value="C"> <code>output[count[key]]</code></label>
+                    <label><input type="radio" name="q5" value="D"> <code>input[count[key]]</code></label>
+                </div>
+            </div>
+
+            <!-- Q6 -->
+            <div class="question-card" data-id="q6">
+                <h2>6. Radix Sort Theory</h2>
+                <p><strong>Part A:</strong> Radix sort processes numbers digit by digit in which order?</p>
+                <div class="options">
+                    <label><input type="radio" name="q6_ord" value="A"> MSD to LSD (Most Significant to Least)</label>
+                    <label><input type="radio" name="q6_ord" value="B"> LSD to MSD (Least Significant to Most)</label>
+                </div>
+                <br>
+                <p><strong>Part B:</strong> Which historical machine is cited in the slides as operating based on the Radix Sort algorithm?</p>
+                <div class="options">
+                    <label><input type="radio" name="q6_hist" value="A"> The Enigma Machine</label>
+                    <label><input type="radio" name="q6_hist" value="B"> Punched Card Sorter</label>
+                    <label><input type="radio" name="q6_hist" value="C"> The Babbage Difference Engine</label>
+                </div>
+            </div>
+
+            <!-- Q7 -->
+            <div class="question-card" data-id="q7">
+                <h2>7. Radix Sort Simulation</h2>
+                <div class="professor-note">
+                    "Buckets with same digit at ones place... sort based on that."
+                </div>
+                <p>Input: <code>[170, 090, 802, 002]</code></p>
+                <p>Perform <strong>Round 1</strong> (sorting by the ones digit only). Enter the resulting numbers in order, comma separated.</p>
+                <input type="text" id="q7_input" placeholder="e.g. 100, 200, 300..." style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 4px; font-size: 1em;">
+                <p style="font-size: 0.85em; color: #666; margin-top: 5px;">(Tip: Remember stability rules for ties)</p>
+            </div>
+
+            <!-- Review Screen -->
+            <div class="question-card" data-id="review">
+                <h2>Review & Submit</h2>
+                <p class="professor-note">Please review your status below. You can click on a question number to return to it.</p>
+                
+                <div class="review-grid" id="review-grid">
+                    <!-- Javascript will populate this -->
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="submit-btn" onclick="submitExam()">Submit Final Answers</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="nav-footer">
+            <button id="prev-btn" class="secondary" onclick="move(-1)">Previous</button>
+            <button id="next-btn" onclick="move(1)">Next</button>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-screen" style="display:none;">
+        <div class="header">
+            <h1>Exam Results</h1>
+            <p id="final-score" style="font-size: 1.5em; font-weight: bold;"></p>
+            <div id="grade-message" class="professor-note"></div>
+        </div>
+        
+        <div id="detailed-feedback">
+            <!-- Feedback items injected here -->
+        </div>
+
+        <div style="text-align: center; margin-top: 40px;">
+            <button onclick="location.reload()">Retake Exam</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    /* --- State Management --- */
+    const totalQuestions = 7;
+    let currentStep = 0; // 0 to 6 are questions, 7 is review
+    
+    // Store user answers
+    const answers = {
+        q1: null,
+        q2: [null, null, null, null, null],
+        q3: [null, null, null, null, null],
+        q4: { dir: null, idx: null },
+        q5: null,
+        q6: { ord: null, hist: null },
+        q7: ""
+    };
+
+    /* --- Initialization --- */
+    function startExam() {
+        document.getElementById('intro-screen').style.display = 'none';
+        document.getElementById('exam-interface').style.display = 'block';
+        showQuestion(0);
+        updateProgress();
+    }
+
+    /* --- Navigation --- */
+    function showQuestion(index) {
+        const cards = document.querySelectorAll('#questions-container .question-card');
+        cards.forEach(card => card.classList.remove('active'));
+        
+        if (index < totalQuestions) {
+            cards[index].classList.add('active');
+            document.getElementById('q-current').innerText = index + 1;
+            document.querySelector('.nav-footer').style.display = 'flex';
+        } else {
+            // Review Screen
+            cards[totalQuestions].classList.add('active');
+            renderReviewGrid();
+            document.querySelector('.nav-footer').style.display = 'none'; // Hide default nav on review
+        }
+
+        // Button Logic
+        document.getElementById('prev-btn').disabled = (index === 0);
+        document.getElementById('next-btn').innerText = (index === totalQuestions - 1) ? 'Review' : 'Next';
+        
+        currentStep = index;
+        updateProgress();
+    }
+
+    function move(direction) {
+        const newStep = currentStep + direction;
+        if (newStep >= 0 && newStep <= totalQuestions) {
+            showQuestion(newStep);
+        }
+    }
+
+    function jumpTo(index) {
+        showQuestion(index);
+    }
+
+    function updateProgress() {
+        const pct = ((currentStep) / totalQuestions) * 100;
+        document.getElementById('progress-fill').style.width = pct + '%';
+    }
+
+    /* --- Input Event Listeners --- */
+    // MCQ Q1
+    document.querySelectorAll('input[name="q1"]').forEach(el => {
+        el.addEventListener('change', (e) => answers.q1 = e.target.value);
+    });
+
+    // Array Q2 & Q3
+    document.querySelectorAll('.array-input').forEach(el => {
+        el.addEventListener('input', (e) => {
+            const q = e.target.getAttribute('data-q');
+            const idx = e.target.getAttribute('data-idx');
+            if(q && idx !== null) {
+                answers[q][parseInt(idx)] = parseInt(e.target.value);
+            }
+        });
+    });
+
+    // Q4
+    document.querySelectorAll('input[name="q4_dir"]').forEach(el => {
+        el.addEventListener('change', (e) => answers.q4.dir = e.target.value);
+    });
+    document.getElementById('q4_idx').addEventListener('input', (e) => {
+        answers.q4.idx = e.target.value;
+    });
+
+    // Q5
+    document.querySelectorAll('input[name="q5"]').forEach(el => {
+        el.addEventListener('change', (e) => answers.q5 = e.target.value);
+    });
+
+    // Q6
+    document.querySelectorAll('input[name="q6_ord"]').forEach(el => {
+        el.addEventListener('change', (e) => answers.q6.ord = e.target.value);
+    });
+    document.querySelectorAll('input[name="q6_hist"]').forEach(el => {
+        el.addEventListener('change', (e) => answers.q6.hist = e.target.value);
+    });
+
+    // Q7
+    document.getElementById('q7_input').addEventListener('input', (e) => {
+        answers.q7 = e.target.value;
+    });
+
+    /* --- Review Logic --- */
+    function renderReviewGrid() {
+        const grid = document.getElementById('review-grid');
+        grid.innerHTML = '';
+        for(let i=0; i<totalQuestions; i++) {
+            const div = document.createElement('div');
+            div.className = 'review-item';
+            div.innerText = i+1;
+            
+            // Check if answered
+            let isAnswered = false;
+            if(i===0) isAnswered = !!answers.q1;
+            if(i===1) isAnswered = answers.q2.every(v => v !== null && !isNaN(v));
+            if(i===2) isAnswered = answers.q3.every(v => v !== null && !isNaN(v));
+            if(i===3) isAnswered = !!answers.q4.dir && answers.q4.idx !== "";
+            if(i===4) isAnswered = !!answers.q5;
+            if(i===5) isAnswered = !!answers.q6.ord && !!answers.q6.hist;
+            if(i===6) isAnswered = answers.q7.trim().length > 0;
+
+            if(isAnswered) div.classList.add('answered');
+            
+            div.onclick = () => jumpTo(i);
+            grid.appendChild(div);
+        }
+    }
+
+    /* --- Submission & Grading Logic --- */
+    function submitExam() {
+        document.getElementById('exam-interface').style.display = 'none';
+        document.getElementById('results-screen').style.display = 'block';
+        
+        let score = 0;
+        let html = '';
+
+        // --- Q1 Grading ---
+        // Correct: B (O(n) space is false, it's O(n+k))
+        const q1Correct = (answers.q1 === 'B');
+        if(q1Correct) score++;
+        html += generateResultCard(1, "Counting Sort Efficiency", q1Correct, 
+            "B", answers.q1, 
+            "The statement 'It requires O(n) space complexity' is FALSE. As per slide 4, the space complexity is O(n + k) because we require an auxiliary count array of size k+1 in addition to the input/output arrays.");
+
+        // --- Q2 Grading ---
+        // Input: [1, 4, 1, 2, 4, 3], k=4.
+        // Counts: 0s:0, 1s:2, 2s:1, 3s:1, 4s:2 -> [0, 2, 1, 1, 2]
+        const q2Target = [0, 2, 1, 1, 2];
+        const q2User = answers.q2;
+        const q2Correct = JSON.stringify(q2User) === JSON.stringify(q2Target);
+        if(q2Correct) score++;
+        html += generateResultCard(2, "Count Array Calculation", q2Correct, 
+            JSON.stringify(q2Target), JSON.stringify(q2User),
+            "Step 2 of the algorithm (Slides 7-15) involves counting occurrences. We have two 1s, one 2, one 3, and two 4s.");
+
+        // --- Q3 Grading ---
+        // Prefix Sum of [0, 2, 1, 1, 2] -> [0, 2, 3, 4, 6]
+        const q3Target = [0, 2, 3, 4, 6];
+        const q3User = answers.q3;
+        const q3Correct = JSON.stringify(q3User) === JSON.stringify(q3Target);
+        if(q3Correct) score++;
+        html += generateResultCard(3, "Prefix Sum Calculation", q3Correct,
+            JSON.stringify(q3Target), JSON.stringify(q3User),
+            "Step 3 (Slides 16-21) accumulates counts: count[i] = count[i] + count[i-1]. This determines the ending position of each integer in the output.");
+
+        // --- Q4 Grading ---
+        // Part A: End to Start (B)
+        // Part B: Index 5. (count[4]=6 -> decrement to 5 -> index 5)
+        const q4Correct = (answers.q4.dir === 'B' && parseInt(answers.q4.idx) === 5);
+        if(q4Correct) score++;
+        html += generateResultCard(4, "Placement Logic", q4Correct,
+            "Direction: End to Start, Index: 5", 
+            `Direction: ${answers.q4.dir === 'B' ? 'End to Start' : 'Start to End'}, Index: ${answers.q4.idx}`,
+            "Slide 23 states we populate starting from the END of the input array (to maintain stability). Slide 25 shows the logic: count[key] -= 1, then use that value as the index. If count[4] was 6, it becomes 5, so the item goes to index 5.");
+
+        // --- Q5 Grading ---
+        // Code: output[count[key]] = input[i] -> Choice C
+        const q5Correct = (answers.q5 === 'C');
+        if(q5Correct) score++;
+        html += generateResultCard(5, "Python Implementation", q5Correct,
+            "C (output[count[key]])", answers.q5,
+            "Based on the Python code in slide 28. We use the decremented count value as the actual index in the output array.");
+
+        // --- Q6 Grading ---
+        // A: LSD to MSD (B)
+        // B: Punched Card Sorter (B)
+        const q6Correct = (answers.q6.ord === 'B' && answers.q6.hist === 'B');
+        if(q6Correct) score++;
+        html += generateResultCard(6, "Radix Sort Theory", q6Correct,
+            "LSD to MSD, Punched Card Sorter",
+            `Order: ${answers.q6.ord}, History: ${answers.q6.hist}`,
+            "Slide 2 (13.2) states Radix sort starts from the least significant digit. Slide 33 (13.2) mentions the Punched Card Sorter operated on this algorithm.");
+
+        // --- Q7 Grading ---
+        // Input: [170, 090, 802, 002]
+        // Buckets 1s digit:
+        // 0: 170, 090
+        // 2: 802, 002
+        // Result: 170, 090, 802, 002
+        const normalize = (s) => s.replace(/\s/g, '').replace(/,/g, '');
+        const q7Target = "170,090,802,002";
+        const q7User = answers.q7;
+        const q7Correct = normalize(q7User) === normalize(q7Target);
+        if(q7Correct) score++;
+        html += generateResultCard(7, "Radix Sort Simulation", q7Correct,
+            "170, 090, 802, 002", q7User,
+            "We sort by the ones digit (0, 0, 2, 2). 170 comes before 090 because it appeared first in input (stability). 802 comes before 002 because it appeared first.");
+
+        // Final Render
+        document.getElementById('final-score').innerText = `Final Score: ${score} / ${totalQuestions}`;
+        document.getElementById('detailed-feedback').innerHTML = html;
+        
+        const msgEl = document.getElementById('grade-message');
+        if(score === totalQuestions) msgEl.innerText = "Perfect score. You have mastered the slide material.";
+        else if(score > 4) msgEl.innerText = "Good job. Review the explanations below to close the gaps.";
+        else msgEl.innerText = "Please review lecture slides 13.1 and 13.2 carefully.";
+    }
+
+    function generateResultCard(num, title, isCorrect, correctAns, userAns, explanation) {
+        return `
+        <div class="result-card ${isCorrect ? 'correct' : 'incorrect'}">
+            <div class="result-header">
+                <h3>Q${num}: ${title}</h3>
+                <span class="badge ${isCorrect ? 'correct' : 'incorrect'}">${isCorrect ? 'Correct' : 'Incorrect'}</span>
+            </div>
+            <p><strong>Your Answer:</strong> ${userAns || "No answer provided"}</p>
+            ${!isCorrect ? `<p><strong>Correct Answer:</strong> ${correctAns}</p>` : ''}
+            <div class="explanation">
+                <strong>Professor's Explanation:</strong> ${explanation}
+            </div>
+        </div>
+        `;
+    }
+
+</script>
+
+</body>
+</html>

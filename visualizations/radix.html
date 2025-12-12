@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radix Sort Visualization</title>
+    <style>
+        /* GSU Color Palette & Styles */
+        :root {
+            --gsu-blue: #0039A6;
+            --gsu-dark: #1f2a36;
+            --gsu-gray: #777777;
+            --light-bg: #f4f4f4;
+            --highlight: #CC0000;
+            --success: #28a745;
+            --warning: #ffc107;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: var(--light-bg);
+            color: #333;
+        }
+
+        header {
+            background-color: var(--gsu-blue);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h1 { margin: 0; font-size: 1.6rem; }
+        p { margin: 5px 0 0; opacity: 0.9; font-size: 0.9rem; }
+
+        /* Controls */
+        .controls {
+            background: white;
+            padding: 1rem;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #ddd;
+            z-index: 10;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+
+        input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 250px;
+            font-family: monospace;
+        }
+
+        button {
+            background-color: var(--gsu-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #00256e; }
+        button:disabled { background-color: var(--gsu-gray); cursor: not-allowed; }
+        button.danger { background-color: var(--highlight); }
+
+        /* Visualization Layout */
+        #main-container {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            align-items: center;
+        }
+
+        .array-section {
+            width: 100%;
+            max-width: 1000px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .section-label {
+            align-self: flex-start;
+            font-weight: bold;
+            color: var(--gsu-blue);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .array-row {
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            min-height: 80px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Array Box Styling */
+        .box {
+            width: 50px;
+            height: 60px;
+            border: 2px solid var(--gsu-blue);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            position: relative;
+            background: white;
+            transition: border-color 0.2s, background-color 0.2s, transform 0.2s;
+        }
+
+        .box-idx {
+            position: absolute;
+            top: -20px;
+            font-size: 0.8rem;
+            color: #777;
+            font-weight: normal;
+        }
+
+        /* Count array specific (fixed size 10) */
+        .count-row .box {
+            width: 45px;
+            border-color: #555;
+        }
+        .count-row .box-idx { color: var(--highlight); font-weight: bold; }
+
+        /* Highlights */
+        .highlight-read { background-color: #ffeaa7; border-color: #fdcb6e; } /* Reading an element */
+        .highlight-write { background-color: #81ecec; border-color: #00cec9; } /* Writing to Count/Output */
+        .highlight-active-digit { color: var(--highlight); font-weight: 900; text-decoration: underline; }
+        
+        /* Moving Logic */
+        .mover {
+            position: fixed;
+            z-index: 1000;
+            background: #ffeaa7;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .status-bar {
+            background: var(--gsu-dark);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 1000px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 1.1rem;
+            min-height: 40px;
+        }
+
+        .round-indicator {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            background: var(--highlight);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        /* Helper for highlighting specific digit within number */
+        .digit-span { display: inline-block; }
+        .active-digit { color: var(--highlight); font-size: 1.3rem; }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Radix Sort Visualization</h1>
+    <p>Using Modified Counting Sort (Frequency -> Prefix Sum -> Reverse Fill)</p>
+</header>
+
+<div class="controls">
+    <div class="control-group">
+        <label>Input Array:</label>
+        <input type="text" id="inputArray" value="170, 45, 75, 90, 2, 802, 2, 66">
+    </div>
+
+    <div class="control-group">
+        <button onclick="init()">Load</button>
+        <button onclick="startSort()">Run Sort</button>
+        <button class="danger" onclick="reset()">Reset</button>
+    </div>
+
+    <div class="control-group">
+        <label>Speed:</label>
+        <input type="range" id="speedRange" min="1" max="10" value="6">
+    </div>
+</div>
+
+<div id="main-container">
+    <div class="status-bar" id="status">Ready to Sort.</div>
+
+    <!-- Input Array (Arr) -->
+    <div class="array-section" id="section-input">
+        <div class="section-label">Main Array (arr)</div>
+        <div class="round-indicator" id="roundDisplay">Round: -</div>
+        <div class="array-row" id="arr-row"></div>
+    </div>
+
+    <!-- Count Array -->
+    <div class="array-section" id="section-count">
+        <div class="section-label">Count Array (Digits 0-9)</div>
+        <div class="array-row count-row" id="count-row"></div>
+    </div>
+
+    <!-- Output Array -->
+    <div class="array-section" id="section-output">
+        <div class="section-label">Output Array (Sorted for current digit)</div>
+        <div class="array-row" id="output-row"></div>
+    </div>
+</div>
+
+<script>
+    // --- State ---
+    let arr = [];
+    let n = 0;
+    let countArr = new Array(10).fill(0);
+    let outputArr = [];
+    
+    let animationQueue = [];
+    let isAnimating = false;
+    let currentRoundExp = 1; // 1, 10, 100...
+
+    // --- Initialization ---
+
+    function init() {
+        const input = document.getElementById('inputArray').value;
+        arr = input.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+        n = arr.length;
+        outputArr = new Array(n).fill(0);
+        countArr = new Array(10).fill(0);
+        currentRoundExp = 1;
+        
+        renderStatic('arr', arr);
+        renderStatic('count', countArr);
+        renderStatic('output', outputArr);
+        document.getElementById('roundDisplay').textContent = "Round: -";
+        updateStatus("Loaded. Click 'Run Sort' to begin.");
+    }
+
+    function reset() {
+        if(isAnimating) return; // Prevent during animation
+        init();
+    }
+
+    // --- HTML Rendering ---
+
+    function renderStatic(type, data, highlightIndices = [], activeDigitExp = null) {
+        const container = document.getElementById(`${type}-row`);
+        container.innerHTML = '';
+
+        data.forEach((val, i) => {
+            const box = document.createElement('div');
+            box.className = 'box';
+            box.id = `${type}-idx-${i}`;
+
+            // Handle digit highlighting for main array
+            if (activeDigitExp !== null && type === 'arr') {
+                const sVal = val.toString();
+                const expIdx = Math.log10(activeDigitExp); 
+                // digit position from right (0-indexed)
+                // e.g., 170, exp=1 -> pos 0 ('0'). exp=10 -> pos 1 ('7')
+                // string index = len - 1 - pos
+                const charPos = sVal.length - 1 - Math.log10(activeDigitExp);
+                
+                if (charPos >= 0) {
+                    // Split string to style specific digit
+                    const pre = sVal.substring(0, charPos);
+                    const digit = sVal.charAt(charPos);
+                    const post = sVal.substring(charPos + 1);
+                    box.innerHTML = `${pre}<span class="active-digit">${digit}</span>${post}`;
+                } else {
+                    // Implicit 0 (e.g., number 2, round 10 -> 02)
+                    box.innerHTML = `<span style="color:#ccc">0</span>` + val;
+                }
+            } else {
+                box.textContent = val;
+            }
+
+            // Index Label
+            const idx = document.createElement('div');
+            idx.className = 'box-idx';
+            idx.textContent = i;
+            box.appendChild(idx);
+
+            // Highlights
+            if (highlightIndices.includes(i)) {
+                box.classList.add('highlight-read');
+            }
+
+            container.appendChild(box);
+        });
+    }
+
+    // --- Algorithm Logic (Generating Animation Queue) ---
+
+    function startSort() {
+        if (arr.length === 0) init();
+        if (isAnimating) return;
+
+        animationQueue = [];
+        const maxNum = Math.max(...arr);
+        const rounds = maxNum.toString().length;
+
+        // Queue logic
+        for (let round = 0; round < rounds; round++) {
+            let exp = Math.pow(10, round);
+            
+            queueStep('round-start', { exp: exp, roundNum: round + 1 }, `Starting Round ${round+1} (Place Value: ${exp})`);
+            
+            // 1. Frequency Count
+            queueStep('clear-count', null, "Resetting Count Array");
+            // Simulate clearing internally for algo consistency
+            let localCount = new Array(10).fill(0);
+            
+            for (let i = 0; i < n; i++) {
+                let digit = Math.floor(arr[i] / exp) % 10;
+                localCount[digit]++;
+                queueStep('count-freq', { arrIdx: i, digit: digit, newVal: localCount[digit], exp: exp }, 
+                          `Arr[${i}] is ${arr[i]}. Digit at pos ${round+1} is ${digit}. Increment Count[${digit}].`);
+            }
+
+            // 2. Prefix Sum
+            for (let i = 1; i < 10; i++) {
+                let old = localCount[i];
+                localCount[i] += localCount[i - 1];
+                queueStep('prefix-sum', { idx: i, prevIdx: i-1, newVal: localCount[i] }, 
+                          `Count[${i}] += Count[${i-1}] (${old} + ${localCount[i-1]} = ${localCount[i]})`);
+            }
+
+            // 3. Build Output (Reverse)
+            let localOutput = new Array(n).fill(0);
+            for (let i = n - 1; i >= 0; i--) {
+                let digit = Math.floor(arr[i] / exp) % 10;
+                
+                localCount[digit]--; // Decrement first (0-based index logic used in typical implementations)
+                // Note: The python code provided does: count[digit] -= 1; output[count[digit]] = arr[i]
+                // This implies Count contained 1-based positions (Prefix sums). Correct.
+                
+                let targetIdx = localCount[digit];
+                localOutput[targetIdx] = arr[i];
+
+                queueStep('place-output', { 
+                    arrIdx: i, 
+                    digit: digit, 
+                    countVal: targetIdx, 
+                    val: arr[i],
+                    exp: exp 
+                }, `Digit is ${digit}. Count[${digit}] becomes ${targetIdx}. Moving ${arr[i]} to Output[${targetIdx}].`);
+            }
+
+            // 4. Copy Back
+            arr = [...localOutput];
+            queueStep('copy-back', { newArr: [...arr] }, "Copying Output back to Main Array.");
+        }
+
+        queueStep('done', null, "Sort Complete.");
+        playAnimations();
+    }
+
+    function queueStep(type, data, msg) {
+        animationQueue.push({ type, data, msg });
+    }
+
+    // --- Animation Player ---
+
+    async function playAnimations() {
+        isAnimating = true;
+        
+        const getDelay = () => 1200 - (document.getElementById('speedRange').value * 110);
+        const updateStatus = (msg) => document.getElementById('status').textContent = msg;
+
+        // Internal visual state tracking
+        // (We need to maintain state here because the actual 'arr' variable is already sorted by the loop above)
+        // So we need to reconstruct the visual state step by step.
+        // Wait, the 'arr' variable above IS updated round by round.
+        // But inside the loop, 'arr' changes.
+        // Solution: We need to use snapshot data from the step object or maintain a separate visual state.
+        // The queue steps contain necessary data values (newVal, etc), so we act on DOM elements mainly.
+        // However, 'arr' needs to be visually reset to Initial State for the animation to look right?
+        // Yes. So let's re-parse input to get start state.
+        
+        const input = document.getElementById('inputArray').value;
+        let vArr = input.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+        let vCount = new Array(10).fill(0);
+        let vOutput = new Array(vArr.length).fill(0);
+        let vExp = 1;
+
+        // Initial Draw
+        renderStatic('arr', vArr);
+        renderStatic('count', vCount);
+        renderStatic('output', vOutput);
+
+        for (const step of animationQueue) {
+            updateStatus(step.msg);
+
+            // Clean previous highlights
+            document.querySelectorAll('.highlight-read, .highlight-write').forEach(el => {
+                el.classList.remove('highlight-read');
+                el.classList.remove('highlight-write');
+            });
+
+            if (step.type === 'round-start') {
+                vExp = step.data.exp;
+                document.getElementById('roundDisplay').textContent = `Round: ${step.data.roundNum} (10^${step.data.roundNum-1})`;
+                // Redraw arr with digit highlighting
+                renderStatic('arr', vArr, [], vExp);
+                // Clear output visually
+                vOutput.fill(0);
+                renderStatic('output', vOutput);
+            }
+            else if (step.type === 'clear-count') {
+                vCount.fill(0);
+                renderStatic('count', vCount);
+            }
+            else if (step.type === 'count-freq') {
+                // Highlight Arr index
+                const arrBox = document.getElementById(`arr-idx-${step.data.arrIdx}`);
+                arrBox.classList.add('highlight-read');
+                
+                // Update Count Visual
+                vCount[step.data.digit] = step.data.newVal;
+                const countBox = document.getElementById(`count-idx-${step.data.digit}`);
+                countBox.textContent = step.data.newVal; // Update text
+                // We lost the index label by overwriting textContent, restore it
+                const idxLabel = document.createElement('div');
+                idxLabel.className = 'box-idx'; 
+                idxLabel.textContent = step.data.digit;
+                countBox.appendChild(idxLabel);
+                
+                countBox.classList.add('highlight-write');
+            }
+            else if (step.type === 'prefix-sum') {
+                vCount[step.data.idx] = step.data.newVal;
+                
+                const boxPrev = document.getElementById(`count-idx-${step.data.prevIdx}`);
+                const boxCurr = document.getElementById(`count-idx-${step.data.idx}`);
+                
+                boxPrev.classList.add('highlight-read');
+                boxCurr.classList.add('highlight-write');
+                
+                boxCurr.childNodes[0].nodeValue = step.data.newVal; // Update text node only
+            }
+            else if (step.type === 'place-output') {
+                const { arrIdx, digit, countVal, val, exp } = step.data;
+                
+                // 1. Highlight source
+                const sourceBox = document.getElementById(`arr-idx-${arrIdx}`);
+                sourceBox.classList.add('highlight-read');
+                
+                // 2. Highlight count decrement
+                const countBox = document.getElementById(`count-idx-${digit}`);
+                vCount[digit] = countVal; // Update visual state variable
+                countBox.childNodes[0].nodeValue = countVal;
+                countBox.classList.add('highlight-write');
+
+                // 3. Move Animation
+                // Create flying clone
+                await animateMove(sourceBox, `output-idx-${countVal}`, val);
+
+                // 4. Set Output Visual
+                vOutput[countVal] = val;
+                const outBox = document.getElementById(`output-idx-${countVal}`);
+                outBox.textContent = val;
+                const idxLabel = document.createElement('div');
+                idxLabel.className = 'box-idx'; 
+                idxLabel.textContent = countVal;
+                outBox.appendChild(idxLabel);
+            }
+            else if (step.type === 'copy-back') {
+                // Update main array visual
+                vArr = step.data.newArr;
+                // Animate flash
+                renderStatic('arr', vArr);
+                document.getElementById('section-input').style.backgroundColor = '#d5f5e3';
+                await new Promise(r => setTimeout(r, 300));
+                document.getElementById('section-input').style.backgroundColor = 'white';
+            }
+            else if (step.type === 'done') {
+                renderStatic('arr', vArr); // Clean render
+                updateStatus("Sorting Complete!");
+            }
+
+            await new Promise(r => setTimeout(r, getDelay()));
+        }
+
+        isAnimating = false;
+    }
+
+    function updateStatus(msg) {
+        document.getElementById('status').textContent = msg;
+    }
+
+    // --- Helper: Animate Movement ---
+    function animateMove(sourceEl, targetId, val) {
+        return new Promise(resolve => {
+            const targetEl = document.getElementById(targetId);
+            if(!sourceEl || !targetEl) { resolve(); return; }
+
+            const sRect = sourceEl.getBoundingClientRect();
+            const tRect = targetEl.getBoundingClientRect();
+
+            // Create flyer
+            const flyer = document.createElement('div');
+            flyer.className = 'box mover';
+            flyer.textContent = val;
+            flyer.style.width = sRect.width + 'px';
+            flyer.style.height = sRect.height + 'px';
+            flyer.style.left = sRect.left + 'px';
+            flyer.style.top = sRect.top + 'px';
+            
+            document.body.appendChild(flyer);
+
+            // Animate
+            const speed = document.getElementById('speedRange').value;
+            const duration = 1000 - (speed * 90); // Match delay somewhat
+
+            // Force reflow
+            flyer.getBoundingClientRect();
+
+            flyer.style.transition = `all ${duration/1000}s ease-in-out`;
+            flyer.style.left = tRect.left + 'px';
+            flyer.style.top = tRect.top + 'px';
+
+            setTimeout(() => {
+                flyer.remove();
+                resolve();
+            }, duration);
+        });
+    }
+
+    // Init
+    init();
+
+</script>
+</body>
+</html>
