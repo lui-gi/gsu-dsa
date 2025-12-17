@@ -182,7 +182,7 @@
     <div class="wave"></div>
     <div id="clock">12:00 PM</div>
     <div id="category-row"></div>
-    <div id="help">Use Arrow Keys to Navigate</div>
+    <div id="help">Use Arrow Keys or Click to Navigate</div>
 
     <script>
         const menuData = [
@@ -222,9 +222,16 @@
                 const label = document.createElement('div');
                 label.className = 'cat-label';
                 label.innerText = cat.name;
-                
+
                 const icon = document.createElement('div');
                 icon.className = 'cat-icon';
+                icon.style.cursor = 'pointer';
+                // Click on category icon to navigate to that category
+                icon.addEventListener('click', () => {
+                    currentCat = cIdx;
+                    currentItem = 0;
+                    updatePos();
+                });
 
                 const col = document.createElement('div');
                 col.className = 'item-col';
@@ -233,8 +240,21 @@
                 cat.items.forEach((txt, iIdx) => {
                     const item = document.createElement('div');
                     item.className = 'item';
+                    item.style.cursor = 'pointer';
                     // We use innerHTML to insert the square icon and text
                     item.innerHTML = `<div class="item-icon"></div><span>${txt}</span>`;
+                    // Click on menu item to select it
+                    item.addEventListener('click', () => {
+                        if (currentCat === cIdx) {
+                            currentItem = iIdx;
+                            updatePos();
+                        } else {
+                            // If clicking an item from a different category, switch to that category first
+                            currentCat = cIdx;
+                            currentItem = iIdx;
+                            updatePos();
+                        }
+                    });
                     col.appendChild(item);
                 });
 
