@@ -4,10 +4,10 @@
 
 ## Overview
 
-Data structures are one of the most important concepts of computer science, especially in technical interviews, yet they can be difficult to grasp through the code implementation alone. As a previous student who has taken Dr. Islam's course, I built this tool to help current GSU Data Structures students visualize each concept so you can make more sense of each structure.
+Data structures are one of the most important concepts of computer science, especially in technical interviews, yet they can be difficult to grasp through the code implementation alone. As a previous student who has taken Dr. Islam's course, I built this tool to help current GSU Data Structures students visualize each concept because I also faced difficulty trying to imagine how these structures looked beyond their Python implementation.
 
 This project offers visualizations for the standard structures and algorithms covered in class, providing real-time feedback for operations like insertion, deletion, and traversal to reinforce understanding before exams. I also took inspiration from
-old PlayStation homescreens for the navigation for some eye candy.
+old PlayStation homescreens for the navigation for some nostalgic eye candy.
 
 ## Current Structures
 
@@ -33,7 +33,7 @@ The application currently supports visualizations for the following data structu
 * **Binary Tree:** Standard binary tree traversal and structure.
 * **Heaps:** Max-Heap and Min-Heap operations (heapify, extract).
 * **AVL Tree:** Self-balancing binary search tree rotations.
-* **Trie (Prefix Tree):** String storage and retrieval optimization.
+* **Trie:** String storage and retrieval optimization.
 
 ### Graphs & Algorithms
 
