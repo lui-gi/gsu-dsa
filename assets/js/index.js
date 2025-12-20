@@ -1,15 +1,28 @@
 const menuData = [
-    { name: "Settings", items: ["System Update", "USB Connection", "Video Settings", "Photo Settings", "System Settings", "Theme Settings"] },
-    { name: "Photo", items: ["Memory Stick™", "Camera", "Wallpaper"] },
-    { name: "Music", items: ["Memory Stick™", "Volume Control", "SensMe™ Channels", "Playlist"] },
-    { name: "Video", items: ["Memory Stick™", "UMD™"] },
-    { name: "Game", items: ["Game Sharing", "Saved Data Utility", "Memory Stick™", "UMD™"] },
-    { name: "Network", items: ["Instruction Manuals", "Remote Play", "Internet Radio", "Internet Browser"] },
-    { name: "PSN", items: ["Sign Up", "Manage Account", "PlayStation®Store"] }
+    {
+        name: "System",
+        items: ["About GSU DSA", "Credits (Dr. Islam)", "Source Code"]
+    },
+    {
+        name: "Linear Structures",
+        items: ["Stack", "Queue", "Singly Linked List", "Doubly Linked List"]
+    },
+    {
+        name: "Key-Value Stores",
+        items: ["Dictionary", "Hash Table"]
+    },
+    {
+        name: "Trees",
+        items: ["Binary Tree", "Heap", "AVL Tree", "Trie"]
+    },
+    {
+        name: "Graphs & Algorithms",
+        items: ["Graph Representation", "Topological Sort", "Dijkstra's Algorithm"]
+    }
 ];
 
-let currentCat = 4; // Start at Game
-let currentItem = 1; // Start at Saved Data
+let currentCat = 1; // Start at Linear Structures
+let currentItem = 1; // Start at Queue
 
 const rowEl = document.getElementById('category-row');
 
@@ -19,9 +32,9 @@ const ITEM_HEIGHT = 80;
 
 function init() {
     render();
-    updateClock();
+    // updateClock();  // Removed - no longer using dynamic clock
     updatePos();
-    setInterval(updateClock, 60000);
+    // setInterval(updateClock, 60000);  // Removed - no longer using dynamic clock
 }
 
 function render() {
@@ -111,11 +124,11 @@ function updateVertical(cIdx) {
     col.style.transform = `translateY(${scrollY}px)`;
 }
 
-function updateClock() {
-    const now = new Date();
-    const str = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    document.getElementById('clock').innerText = str;
-}
+// function updateClock() {
+//     const now = new Date();
+//     const str = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+//     document.getElementById('clock').innerText = str;
+// }
 
 document.addEventListener('keydown', (e) => {
     if(e.key === 'ArrowRight') {

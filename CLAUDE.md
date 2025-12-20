@@ -12,8 +12,9 @@ GSU DSA is a static educational website for Georgia State University students ta
 
 The main entry point features a PlayStation XMB-style menu system with:
 
-- **Horizontal Navigation**: Category selection (Settings, Photo, Music, Video, Game, Network, PSN)
+- **Horizontal Navigation**: Category selection (System, Linear Structures, Key-Value Stores, Trees, Graphs & Algorithms)
 - **Vertical Navigation**: Item selection within each category
+- **Site Title**: "gsu dsa" displayed in top-right corner using monospace font
 - **Visual System**: CSS custom properties control layout (icon size, spacing, positioning)
 - **State Management**: Pure JavaScript manages `currentCat` and `currentItem` indices
 - **Key Constants**:
@@ -49,17 +50,31 @@ Each visualization is a self-contained HTML file with embedded CSS and JavaScrip
 
 **Canvas Transform Pattern**: All drawing operations are wrapped in `ctx.save()` / `ctx.restore()` with `ctx.translate(offsetX, offsetY)` and `ctx.scale(scale, scale)` applied for pan/zoom.
 
+## Typography
+
+The site uses a monospace font stack throughout for a technical, CS-focused aesthetic:
+- **Font Family**: `'Consolas', 'Monaco', 'Courier New', monospace`
+- **Base Font Size**: 18px
+- **Title Font Size**: 32px (for "gsu dsa" branding)
+- **Category Labels**: 22px
+
+This creates a cohesive, code-inspired look that complements the data structures educational theme.
+
 ## File Structure
 
 ```
 /
-├── index.html          # PlayStation-style navigation menu
+├── index.html          # Main navigation page
+├── CLAUDE.md          # This file
+├── README.md          # Project documentation
 ├── structures/
 │   └── heap.html      # Heap visualization (others planned)
 └── assets/
-    ├── css/           # Empty (styles inline for now)
-    ├── js/            # Empty (scripts inline for now)
-    └── images/        # Empty (placeholder for future assets)
+    ├── css/
+    │   └── index.css  # Navigation styles
+    ├── js/
+    │   └── index.js   # Navigation logic and menuData
+    └── images/        # Placeholder for future assets
 ```
 
 ## Development Workflow
@@ -76,7 +91,7 @@ Open HTML files directly in a browser. No build process or server required.
    - Implement glass morphism styling
    - Use animation queue pattern for operation visualization
    - Support both tree/graph view and array representation where applicable
-3. Add navigation entry in index.html `menuData` array
+3. Add navigation entry in `assets/js/index.js` menuData array
 
 ### Design Patterns
 
@@ -116,6 +131,7 @@ When committing, follow the existing style: short, descriptive messages in lower
 ## Design Constraints
 
 - **GSU Colors**: Blue (#0039A6) primary, Red (#CC0000) for highlights
+- **Typography**: Monospace font stack (Consolas/Monaco/Courier New) for tech aesthetic
 - **Self-Contained Files**: Each visualization should work standalone
 - **No Dependencies**: Pure HTML/CSS/JS, no frameworks or build tools
 - **Mobile Support**: Touch events for pan/zoom on visualizations

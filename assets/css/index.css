@@ -24,7 +24,7 @@ body, html {
     height: 100%;
     overflow: hidden;
     background: var(--bg-gradient);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     color: var(--text-color);
     /* Bump up base font size */
     font-size: 18px;
@@ -100,6 +100,7 @@ body, html {
     position: absolute;
     top: -60px; /* Moved up to account for larger size */
     white-space: nowrap;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     font-size: 22px;
     font-weight: 300;
     text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
@@ -157,9 +158,11 @@ body, html {
     position: absolute;
     top: 40px;
     right: 50px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     font-size: 32px;
-    font-weight: 300;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    font-weight: 700;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+    letter-spacing: 3px;
 }
 #help {
     position: absolute;
