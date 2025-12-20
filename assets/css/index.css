@@ -217,23 +217,44 @@ body.split-view .wave {
     transition: opacity 0.3s ease-out;
 }
 
-/* Back Button */
+/* Back Button - Glass Morphism */
 .back-button {
     position: absolute;
     top: 20px;
     left: 20px;
     padding: 12px 24px;
-    background: rgba(0, 57, 166, 0.9);
-    color: white;
-    border: none;
-    border-radius: 8px;
+
+    /* Glass morphism background */
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+
+    /* Glass border */
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 12px;
+
+    /* Shadow for depth */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+    /* Text styling */
+    color: #1a1a1a;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     font-size: 16px;
+    font-weight: 600;
+
     cursor: pointer;
     z-index: 101;
-    transition: background 0.2s;
+    transition: all 0.3s ease;
 }
 
 .back-button:hover {
-    background: rgba(0, 57, 166, 1);
+    background: rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.back-button:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }

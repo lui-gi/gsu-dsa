@@ -122,12 +122,6 @@ border: 1px solid rgba(0, 57, 166, 0.1);
 box-shadow: 0 8px 32px rgba(0, 57, 166, 0.08);
 ```
 
-## Git Workflow
-
-Recent commits show a "started from scratch" approach after initial React + TypeScript attempt. Current implementation uses vanilla HTML/CSS/JS for simplicity.
-
-When committing, follow the existing style: short, descriptive messages in lowercase.
-
 ## Design Constraints
 
 - **GSU Colors**: Blue (#0039A6) primary, Red (#CC0000) for highlights
@@ -136,3 +130,4 @@ When committing, follow the existing style: short, descriptive messages in lower
 - **No Dependencies**: Pure HTML/CSS/JS, no frameworks or build tools
 - **Mobile Support**: Touch events for pan/zoom on visualizations
 - **Accessibility**: High contrast, readable font sizes (18px+ for body text)
+
