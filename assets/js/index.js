@@ -21,6 +21,30 @@ const menuData = [
     }
 ];
 
+// File path mapping for visualization HTML files
+const itemToPath = {
+    // Linear Structures
+    "Stack": "structures/linear-structures/stack.html",
+    "Queue": "structures/linear-structures/queue.html",
+    "Singly Linked List": "structures/linear-structures/singly-linked-list.html",
+    "Doubly Linked List": "structures/linear-structures/doubly-linked-list.html",
+
+    // Key-Value Stores
+    "Dictionary": "structures/key-value-stores/dictionary.html",
+    "Hash Table": "structures/key-value-stores/hash-table.html",
+
+    // Trees
+    "Binary Tree": "structures/trees/binary-tree.html",
+    "Heap": "structures/trees/heap.html",
+    "AVL Tree": "structures/trees/avl-tree.html",
+    "Trie": "structures/trees/trie.html",
+
+    // Graphs & Algorithms
+    "Graph Representation": "structures/graphs-and-algorithms/graph-representation.html",
+    "Topological Sort": "structures/graphs-and-algorithms/topological-sort.html",
+    "Dijkstra's Algorithm": "structures/graphs-and-algorithms/dijkstras-algorithm.html"
+};
+
 let currentCat = 1; // Start at Linear Structures
 let currentItem = 1; // Start at Queue
 
@@ -69,16 +93,20 @@ function render() {
             item.style.cursor = 'pointer';
             // We use innerHTML to insert the square icon and text
             item.innerHTML = `<div class="item-icon"></div><span>${txt}</span>`;
-            // Click on menu item to select it
+            // Click on menu item to select it and load in iframe
             item.addEventListener('click', () => {
                 if (currentCat === cIdx) {
                     currentItem = iIdx;
                     updatePos();
+                    // Load the clicked item in iframe
+                    loadInIframe(txt);
                 } else {
                     // If clicking an item from a different category, switch to that category first
                     currentCat = cIdx;
                     currentItem = iIdx;
                     updatePos();
+                    // Load the clicked item in iframe
+                    loadInIframe(txt);
                 }
             });
             col.appendChild(item);
@@ -130,6 +158,47 @@ function updateVertical(cIdx) {
 //     document.getElementById('clock').innerText = str;
 // }
 
+// Iframe load and close functions
+function loadInIframe(itemName) {
+    const path = itemToPath[itemName];
+    if (!path) {
+        // System items don't have paths - ignore for now
+        console.log(`No path defined for: ${itemName}`);
+        return;
+    }
+
+    const container = document.getElementById('iframe-container');
+    const iframe = document.getElementById('content-iframe');
+
+    // Load the content
+    iframe.src = path;
+
+    // Show iframe with animation
+    container.classList.remove('hidden');
+    // Add split-view class to body to compress menu
+    document.body.classList.add('split-view');
+
+    // Trigger animation after display change
+    setTimeout(() => {
+        container.classList.add('visible');
+    }, 10);
+}
+
+function closeIframe() {
+    const container = document.getElementById('iframe-container');
+    const iframe = document.getElementById('content-iframe');
+
+    // Hide iframe with animation
+    container.classList.remove('visible');
+    document.body.classList.remove('split-view');
+
+    // Clear iframe src after animation completes
+    setTimeout(() => {
+        container.classList.add('hidden');
+        iframe.src = '';
+    }, 400);
+}
+
 document.addEventListener('keydown', (e) => {
     if(e.key === 'ArrowRight') {
         if(currentCat < menuData.length - 1) {
@@ -153,6 +222,13 @@ document.addEventListener('keydown', (e) => {
             currentItem--;
             updatePos();
         }
+    } else if(e.key === 'Enter') {
+        // Load the current item in iframe
+        const itemName = menuData[currentCat].items[currentItem];
+        loadInIframe(itemName);
+    } else if(e.key === 'Escape') {
+        // Close iframe
+        closeIframe();
     }
 });
 

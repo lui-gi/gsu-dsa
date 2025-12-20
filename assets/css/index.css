@@ -170,4 +170,70 @@ body, html {
     left: 40px;
     font-size: 18px;
     opacity: 0.8;
+    transition: opacity 0.3s;
+}
+
+/* IFRAME CONTAINER */
+.iframe-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: white;
+    z-index: 100;
+    opacity: 0;
+    transform: scale(0.97);
+    transition: opacity 0.35s ease-out,
+                transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    pointer-events: none;
+}
+
+.iframe-container.hidden {
+    display: none;
+}
+
+.iframe-container.visible {
+    display: block;
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+.iframe-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: white;
+}
+
+/* Hide navigation when iframe is open */
+body.split-view #category-row,
+body.split-view #clock,
+body.split-view #help,
+body.split-view .wave {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-out;
+}
+
+/* Back Button */
+.back-button {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 12px 24px;
+    background: rgba(0, 57, 166, 0.9);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 101;
+    transition: background 0.2s;
+}
+
+.back-button:hover {
+    background: rgba(0, 57, 166, 1);
 }
