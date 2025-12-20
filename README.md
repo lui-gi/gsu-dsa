@@ -41,47 +41,6 @@ The application currently supports visualizations for the following data structu
 * **Topological Sort:** Directed Acyclic Graph (DAG) ordering.
 * **Dijkstra's Algorithm:** Shortest path visualization.
 
-### File Structure
-
-XMB Navigation Map
-
-[Horizontal Axis: Main Categories]
-    |
-    ├── System
-    ├── Linear Structures
-    ├── Key-Value Stores
-    ├── Trees
-    └── Graphs & Algorithms
-
-[Vertical Axis: Sub-Items]
-
-1. System
-    ├── About GSU DSA
-    ├── Credits (Dr. Islam)
-    └── Source Code
-
-2. Linear Structures
-    ├── Stack
-    ├── Queue
-    ├── Singly Linked List
-    └── Doubly Linked List
-
-3. Key-Value Stores
-    ├── Dictionary
-    └── Hash Table
-
-4. Trees
-    ├── Binary Tree
-    ├── Heaps (Min/Max)
-    ├── AVL Tree
-    └── Trie
-
-5. Graphs & Algorithms
-    ├── Graph Playground (General)
-    ├── Topological Sort
-    └── Dijkstra's Algorithm
-
-
 ## 📄 License
 
 This project is open-source and available under the [MIT License](https://www.google.com/search?q=LICENSE).
