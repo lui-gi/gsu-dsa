@@ -1,0 +1,170 @@
+:root {
+    /* Colors */
+    --bg-color: #0039A6;
+    --bg-gradient: radial-gradient(circle at top right, #0055CC, #001F5C);
+    --text-color: #ffffff;
+
+    /* SCALING: ~1.5x larger than previous */
+    --icon-size: 90px;
+    --icon-spacing: 200px;
+    --item-height: 80px;
+
+    /* The gap for the active category icon to sit in */
+    --selection-gap: 180px;
+
+    /* POSITIONING: More centered */
+    --focus-x: 40%;
+    --focus-y: 40%;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-gradient);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text-color);
+    /* Bump up base font size */
+    font-size: 18px;
+}
+
+.wave {
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 40%;
+    animation: rotate 20s linear infinite;
+    top: 50%;
+    left: -50%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* HORIZONTAL AXIS */
+#category-row {
+    position: absolute;
+    top: var(--focus-y);
+    left: var(--focus-x);
+    display: flex;
+    align-items: flex-start;
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    z-index: 10;
+}
+
+.category-group {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: var(--icon-size);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+/* CATEGORY ICON (The big square) */
+.cat-icon {
+    width: var(--icon-size);
+    height: var(--icon-size);
+    background: rgba(255,255,255,0.7);
+    border: 3px solid rgba(255,255,255,0.2);
+    box-shadow: 0 0 20px rgba(255,255,255,0.2);
+    border-radius: 14px;
+    transition: all 0.3s;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 5;
+}
+
+.category-group.active .cat-icon {
+    background: #fff;
+    transform: scale(1.1);
+    box-shadow: 0 0 40px rgba(255,255,255,0.5);
+    z-index: 20;
+}
+
+.category-group.inactive .cat-icon {
+    opacity: 0.5;
+    transform: scale(0.8);
+}
+
+/* LABEL (e.g. "Settings") */
+.cat-label {
+    position: absolute;
+    top: -60px; /* Moved up to account for larger size */
+    white-space: nowrap;
+    font-size: 22px;
+    font-weight: 300;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.category-group.active .cat-label { opacity: 1; }
+
+/* VERTICAL AXIS */
+.item-col {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    left: 10px; /* Slight offset from center line */
+    width: 600px; /* Wider for larger text */
+    top: 0px;
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s;
+}
+
+.category-group.active .item-col { opacity: 1; }
+
+.item {
+    height: var(--item-height);
+    display: flex;
+    align-items: center;
+    opacity: 0.6;
+    margin-top: 0px;
+    transition: margin-top 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+                opacity 0.2s,
+                transform 0.2s;
+    font-size: 20px; /* Larger item text */
+}
+
+/* THE SKIP LOGIC */
+.item.active {
+    opacity: 1;
+    margin-top: var(--selection-gap);
+    transform: scale(1.05) translateX(15px);
+    font-weight: bold;
+    text-shadow: 0 0 15px rgba(255,255,255,0.5);
+    font-size: 24px;
+}
+
+.item-icon {
+    width: 45px; /* Larger item icon */
+    height: 45px;
+    background: rgba(255,255,255,0.8);
+    margin-right: 25px;
+    border-radius: 6px;
+}
+
+/* HUD */
+#clock {
+    position: absolute;
+    top: 40px;
+    right: 50px;
+    font-size: 32px;
+    font-weight: 300;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+#help {
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+    font-size: 18px;
+    opacity: 0.8;
+}
