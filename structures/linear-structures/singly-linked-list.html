@@ -4,39 +4,871 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Singly Linked List - gsu dsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
+        :root {
+            /* Palette matched to theme */
+            --gsu-blue: #0039A6;
+            --gsu-blue-light: #4d8dff;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            
+            /* Node Colors */
+            --node-normal: #0039A6;
+            --node-active: #CC0000;  /* Deletion Target */
+            --node-traverse: #ffc107; /* Traversal / Current */
+            --node-success: #28a745; /* Success / New Node */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #000c24;
+            color: var(--text-main);
             height: 100vh;
-            background: radial-gradient(circle at top right, #0055CC, #001F5C);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            color: white;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            text-align: center;
+            padding: 20px;
         }
+
+        /* --- BACKGROUND AURA --- */
+        .aura-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .aura-blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+        .blob-1 { background: var(--gsu-blue); width: 700px; height: 700px; top: -10%; left: -10%; animation-duration: 25s; }
+        .blob-2 { background: #0055CC; width: 600px; height: 600px; bottom: -10%; right: -20%; animation-delay: -5s; animation-duration: 30s; }
+        .blob-3 { background: #001F5C; width: 800px; height: 800px; bottom: -20%; left: 20%; opacity: 0.8; animation-delay: -10s; }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 50px) scale(1.1); }
+            100% { transform: translate(-30px, -20px) scale(0.9); }
+        }
+
+        /* --- MAIN GLASS CONTAINER --- */
+        .main-glass-card {
+            width: 100%;
+            max-width: 1600px;
+            height: 95vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- HEADER & CONTROLS --- */
+        header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        
         h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
         }
-        p {
-            font-size: 18px;
-            opacity: 0.8;
+
+        .back-btn {
+            color: var(--gsu-blue-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.2s;
         }
-        a {
+        .back-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--text-muted); }
+
+        .controls-toolbar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding-left: 12px;
+            border-left: 1px solid var(--glass-border);
+        }
+        .control-group:first-child { border-left: none; padding-left: 0; }
+
+        input[type="number"] {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
             color: white;
-            text-decoration: underline;
-            margin-top: 20px;
-            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            width: 80px;
+            outline: none;
+            transition: border-color 0.2s;
         }
+        input:focus { border-color: var(--gsu-blue-light); }
+        input::placeholder { color: rgba(255,255,255,0.3); }
+
+        button {
+            background: rgba(255,255,255,0.08);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-1px);
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        button.primary { background: var(--gsu-blue); border-color: var(--gsu-blue); }
+        button.primary:hover { background: #004BC9; }
+
+        button.danger {
+            background: rgba(204, 0, 0, 0.2);
+            border-color: rgba(204, 0, 0, 0.4);
+            color: #ff6b6b;
+        }
+        button.danger:hover { background: rgba(204, 0, 0, 0.3); border-color: #ff6b6b; }
+
+        /* --- CANVAS AREA --- */
+        #canvas-wrapper {
+            flex-grow: 1;
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            overflow: hidden;
+            cursor: grab;
+        }
+        #canvas-wrapper:active { cursor: grabbing; }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Camera Controls */
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .zoom-btn {
+            width: 40px; height: 40px;
+            padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            background: rgba(15, 23, 42, 0.8);
+            border-color: var(--glass-border);
+            border-radius: 10px;
+        }
+        .zoom-btn:hover { background: rgba(255,255,255,0.1); }
+
+        /* Legend */
+        .legend {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+
+        /* --- ARRAY REPRESENTATION --- */
+        #array-container {
+            height: 140px;
+            min-height: 140px;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+            padding: 20px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .array-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .array-box {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 30px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--glass-border) transparent;
+        }
+        .array-box::-webkit-scrollbar { height: 6px; }
+        .array-box::-webkit-scrollbar-track { background: transparent; }
+        .array-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        .array-cell {
+            min-width: 44px;
+            height: 44px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            position: relative;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        .array-cell span.idx {
+            position: absolute;
+            bottom: -20px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+        .array-cell.active { border-color: #CC0000; box-shadow: 0 0 15px rgba(204, 0, 0, 0.3); background: rgba(204,0,0,0.1); }
+        .array-cell.traverse { border-color: #ffc107; box-shadow: 0 0 15px rgba(255, 193, 7, 0.3); background: rgba(255, 193, 7, 0.1); }
+        .array-cell.success { border-color: #28a745; box-shadow: 0 0 15px rgba(40, 167, 69, 0.3); background: rgba(40,167,69,0.1); }
+
+        /* Status Message */
+        .status-message {
+            position: fixed;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--gsu-blue-light);
+            color: var(--gsu-blue-light);
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .status-message.show { opacity: 1; }
+
     </style>
 </head>
 <body>
-    <h1>Singly Linked List</h1>
-    <p>Visualization coming soon...</p>
-    <a href="../../index.html">← Back to Navigation</a>
+
+    <div class="aura-container">
+        <div class="aura-blob blob-1"></div>
+        <div class="aura-blob blob-2"></div>
+        <div class="aura-blob blob-3"></div>
+    </div>
+
+    <div class="main-glass-card">
+        <header>
+            <div class="header-left">
+                <a href="#" class="back-btn" onclick="window.parent.closeIframe(); return false;">← Back</a>
+                <h1><i class="fa-solid fa-link" style="margin-right: 12px; color: var(--gsu-blue-light);"></i>Singly Linked List</h1>
+            </div>
+            
+            <div class="controls-toolbar">
+                <div class="control-group">
+                    <input type="number" id="valInput" placeholder="Val" onkeypress="handleEnter(event)">
+                    <button class="primary" onclick="handleAddLast()">Add Last</button>
+                    <button onclick="handleAddFirst()">Add First</button>
+                </div>
+
+                <div class="control-group">
+                    <input type="number" id="idxInput" placeholder="Idx" style="width: 60px;">
+                    <button onclick="handleInsertAt()">Insert at Idx</button>
+                    <button onclick="handleDeleteAt()">Del at Idx</button>
+                </div>
+
+                <div class="control-group">
+                    <button class="danger" onclick="handleDeleteLast()">Del Last</button>
+                    <button class="danger" onclick="handleDeleteFirst()">Del First</button>
+                </div>
+                
+                <div class="control-group">
+                    <button onclick="handleClear()">Clear</button>
+                </div>
+            </div>
+        </header>
+
+        <div id="canvas-wrapper">
+            <canvas id="listCanvas"></canvas>
+
+            <div class="legend">
+                <div class="legend-item"><div class="dot" style="color: var(--node-normal); background: currentColor;"></div>Normal</div>
+                <div class="legend-item"><div class="dot" style="color: var(--node-traverse); background: currentColor;"></div>Traversal</div>
+                <div class="legend-item"><div class="dot" style="color: var(--node-active); background: currentColor;"></div>Target</div>
+                <div class="legend-item"><div class="dot" style="color: var(--node-success); background: currentColor;"></div>Success</div>
+            </div>
+
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()"><i class="fa-solid fa-plus"></i></button>
+                <button class="zoom-btn" onclick="zoomOut()"><i class="fa-solid fa-minus"></i></button>
+                <button class="zoom-btn" onclick="resetView()"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+        </div>
+
+        <div id="array-container">
+            <div class="array-label">Logical Index</div>
+            <div class="array-box" id="arrayVisual"></div>
+        </div>
+    </div>
+
+    <div class="status-message" id="statusMessage"></div>
+
+<script>
+    const style = getComputedStyle(document.body);
+    const COLORS = {
+        normal: style.getPropertyValue('--node-normal').trim() || '#0039A6',
+        active: style.getPropertyValue('--node-active').trim() || '#CC0000',
+        traverse: style.getPropertyValue('--node-traverse').trim() || '#ffc107',
+        success: style.getPropertyValue('--node-success').trim() || '#28a745'
+    };
+
+    const canvas = document.getElementById('listCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Node Dimensions
+    const NODE_WIDTH = 120;
+    const NODE_HEIGHT = 60;
+    const POINTER_WIDTH = 40;
+    const NODE_GAP = 80;
+
+    // State
+    let list = [];
+    let animationQueue = [];
+    let isAnimating = false;
+    let nextId = 1;
+
+    // Camera State
+    let offsetX = 0;
+    let offsetY = 0;
+    let scale = 1;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let lastOffsetX = 0;
+    let lastOffsetY = 0;
+
+    function resizeCanvas() {
+        const wrapper = document.getElementById('canvas-wrapper');
+        if (wrapper) {
+            canvas.width = wrapper.offsetWidth;
+            canvas.height = wrapper.offsetHeight;
+        }
+        if (!isAnimating) drawList(null);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    setTimeout(resizeCanvas, 100);
+
+    // Camera Event Listeners
+    canvas.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        lastOffsetX = offsetX;
+        lastOffsetY = offsetY;
+        canvas.style.cursor = 'grabbing';
+    });
+    canvas.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            offsetX = lastOffsetX + (e.clientX - dragStartX);
+            offsetY = lastOffsetY + (e.clientY - dragStartY);
+            if (!isAnimating) drawList(null);
+        }
+    });
+    canvas.addEventListener('mouseup', () => { isDragging = false; canvas.style.cursor = 'grab'; });
+    canvas.addEventListener('mouseleave', () => { isDragging = false; canvas.style.cursor = 'grab'; });
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const scaleAmount = e.deltaY < 0 ? 1.1 : 0.9;
+        scale = Math.min(Math.max(scale * scaleAmount, 0.5), 2);
+        if (!isAnimating) drawList(null);
+    });
+
+    // --- Logic & Operations ---
+
+    function handleAddFirst() {
+        const val = getVal();
+        if (val === null) return;
+        
+        animationQueue = [];
+        const newNode = { val, id: nextId++ };
+        
+        animationQueue.push({ type: 'spawn', listSnapshot: [newNode, ...list], targetIndex: 0 });
+        list.unshift(newNode);
+        animationQueue.push({ type: 'highlight', listSnapshot: [...list], targetIndex: 0 });
+        
+        runAnimation();
+    }
+
+    function handleAddLast() {
+        const val = getVal();
+        if (val === null) return;
+        
+        animationQueue = [];
+        const newNode = { val, id: nextId++ };
+        
+        if (list.length === 0) {
+            list.push(newNode);
+            animationQueue.push({ type: 'spawn', listSnapshot: [...list], targetIndex: 0 });
+        } else {
+            animationQueue.push({ type: 'highlight-tail', listSnapshot: [...list], targetIndex: list.length - 1 });
+            animationQueue.push({ type: 'spawn', listSnapshot: [...list, newNode], targetIndex: list.length });
+            list.push(newNode);
+            animationQueue.push({ type: 'success', listSnapshot: [...list], targetIndex: list.length - 1 });
+        }
+        runAnimation();
+    }
+
+    function handleDeleteFirst() {
+        if (list.length === 0) { showStatus("List is empty!"); return; }
+        
+        animationQueue = [];
+        animationQueue.push({ type: 'highlight', listSnapshot: [...list], targetIndex: 0 });
+        animationQueue.push({ type: 'fade-out', listSnapshot: [...list], targetIndex: 0 });
+        list.shift();
+        animationQueue.push({ type: 'idle', listSnapshot: [...list] });
+        runAnimation();
+    }
+
+    function handleDeleteLast() {
+        if (list.length === 0) { showStatus("List is empty!"); return; }
+        
+        animationQueue = [];
+        
+        if (list.length === 1) {
+            handleDeleteFirst();
+            return;
+        }
+
+        animationQueue.push({ type: 'traverse', listSnapshot: [...list], targetIndex: 0, msg: "Start at Head" });
+
+        // O(n) Traversal Logic
+        for (let i = 0; i < list.length - 1; i++) {
+             animationQueue.push({ type: 'traverse', listSnapshot: [...list], targetIndex: i, msg: "Traversing..." });
+        }
+
+        const predIndex = list.length - 2;
+        const tailIndex = list.length - 1;
+        animationQueue.push({ type: 'found-tail', listSnapshot: [...list], activeIndices: [predIndex, tailIndex], msg: "Found Predecessor!" });
+        animationQueue.push({ type: 'fade-out', listSnapshot: [...list], targetIndex: tailIndex });
+
+        list.pop();
+        animationQueue.push({ type: 'idle', listSnapshot: [...list] });
+        runAnimation();
+    }
+
+    function handleInsertAt() {
+        const val = getVal();
+        const idx = getIdx();
+        if (val === null || idx === null) return;
+        if (idx < 0 || idx > list.length) { showStatus("Index out of bounds"); return; }
+        
+        if (idx === 0) { handleAddFirst(); return; }
+        if (idx === list.length) { handleAddLast(); return; }
+
+        animationQueue = [];
+        
+        for (let i = 0; i < idx; i++) {
+            animationQueue.push({ type: 'traverse', listSnapshot: [...list], targetIndex: i, msg: `Traversing to ${idx}...` });
+        }
+        
+        const newNode = { val, id: nextId++ };
+        const tempList = [...list];
+        tempList.splice(idx, 0, newNode);
+        
+        animationQueue.push({ type: 'spawn', listSnapshot: tempList, targetIndex: idx });
+        list.splice(idx, 0, newNode);
+        animationQueue.push({ type: 'success', listSnapshot: [...list], targetIndex: idx });
+        runAnimation();
+    }
+
+    function handleDeleteAt() {
+        const idx = getIdx();
+        if (idx === null) return;
+        if (idx < 0 || idx >= list.length) { showStatus("Index out of bounds"); return; }
+        
+        if (idx === 0) { handleDeleteFirst(); return; }
+        
+        animationQueue = [];
+        
+        for (let i = 0; i < idx; i++) {
+             animationQueue.push({ type: 'traverse', listSnapshot: [...list], targetIndex: i });
+        }
+        
+        animationQueue.push({ type: 'found-tail', listSnapshot: [...list], activeIndices: [idx-1, idx] });
+        animationQueue.push({ type: 'fade-out', listSnapshot: [...list], targetIndex: idx });
+        list.splice(idx, 1);
+        animationQueue.push({ type: 'idle', listSnapshot: [...list] });
+        runAnimation();
+    }
+
+    function handleClear() {
+        list = [];
+        animationQueue = [];
+        drawList(null);
+        drawArray(null);
+        showStatus("Cleared");
+    }
+
+    // --- Animation Engine ---
+    function runAnimation() {
+        if (isAnimating || animationQueue.length === 0) return;
+        isAnimating = true;
+        disableControls(true);
+        let stepIndex = 0;
+
+        const process = () => {
+            if (stepIndex >= animationQueue.length) {
+                isAnimating = false;
+                disableControls(false);
+                drawList(null);
+                drawArray(null);
+                showStatus("Ready");
+                return;
+            }
+            const step = animationQueue[stepIndex++];
+            let duration = 600;
+            
+            if (step.msg) showStatus(step.msg);
+
+            drawArray(step);
+
+            if (step.type === 'spawn') {
+                drawList(step);
+                setTimeout(process, duration);
+            } else if (step.type === 'traverse') {
+                duration = 400;
+                drawList(step);
+                setTimeout(process, duration);
+            } else if (step.type === 'fade-out') {
+                const startTime = performance.now();
+                const animateFade = (time) => {
+                    let p = (time - startTime) / duration;
+                    if (p > 1) p = 1;
+                    drawList(step, { fadeOpacity: 1 - p });
+                    if (p < 1) requestAnimationFrame(animateFade);
+                    else process();
+                };
+                requestAnimationFrame(animateFade);
+            } else {
+                drawList(step);
+                setTimeout(process, duration);
+            }
+        };
+        process();
+    }
+
+    // --- Drawing Helper: Manual Round Rect ---
+    // Newer browsers have ctx.roundRect, but older ones don't.
+    function drawRoundRectPath(ctx, x, y, width, height, radii) {
+        if (typeof ctx.roundRect === 'function') {
+            ctx.beginPath();
+            ctx.roundRect(x, y, width, height, radii);
+            return;
+        }
+        // Polyfill
+        ctx.beginPath();
+        if (!Array.isArray(radii)) radii = [radii, radii, radii, radii];
+        const [tl, tr, br, bl] = radii;
+        ctx.moveTo(x + tl, y);
+        ctx.lineTo(x + width - tr, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + tr);
+        ctx.lineTo(x + width, y + height - br);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - br, y + height);
+        ctx.lineTo(x + bl, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - bl);
+        ctx.lineTo(x, y + tl);
+        ctx.quadraticCurveTo(x, y, x + tl, y);
+        ctx.closePath();
+    }
+
+    // --- Drawing ---
+    function drawList(step, animState = null) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const data = step ? step.listSnapshot : list;
+        
+        ctx.save();
+        ctx.translate(offsetX + centerX, offsetY + centerY);
+        ctx.scale(scale, scale);
+
+        const totalWidth = data.length * (NODE_WIDTH + NODE_GAP) - NODE_GAP;
+        const startX = -totalWidth / 2;
+
+        data.forEach((node, i) => {
+            const x = startX + i * (NODE_WIDTH + NODE_GAP);
+            const y = 0;
+            
+            let color = COLORS.normal;
+            let opacity = 1.0;
+
+            if (step) {
+                if (step.type === 'highlight' && i === step.targetIndex) color = COLORS.active;
+                if (step.type === 'highlight-tail' && i === step.targetIndex) color = COLORS.traverse;
+                if (step.type === 'traverse' && i === step.targetIndex) color = COLORS.traverse;
+                if (step.type === 'found-tail' && step.activeIndices.includes(i)) color = COLORS.active;
+                if (step.type === 'spawn' && i === step.targetIndex) color = COLORS.success;
+                if (step.type === 'fade-out' && i === step.targetIndex) {
+                    color = COLORS.active;
+                    if (animState) opacity = animState.fadeOpacity;
+                }
+            }
+
+            if (i < data.length - 1) {
+                let linkOpacity = 1.0;
+                if (step && step.type === 'fade-out' && (i + 1 === step.targetIndex)) {
+                     if (animState) linkOpacity = animState.fadeOpacity;
+                }
+                drawLink(x + NODE_WIDTH - POINTER_WIDTH/2, y, x + NODE_WIDTH + NODE_GAP, y, linkOpacity);
+            } else {
+                drawNull(x + NODE_WIDTH - POINTER_WIDTH/2, y, opacity);
+            }
+
+            drawNode(x, y - NODE_HEIGHT/2, node.val, color, opacity);
+
+            if (opacity > 0.5) {
+                if (i === 0) drawLabel(x + NODE_WIDTH/2, y - NODE_HEIGHT - 20, "HEAD");
+                if (i === data.length - 1) drawLabel(x + NODE_WIDTH/2, y + NODE_HEIGHT + 20, "TAIL");
+            }
+        });
+
+        ctx.restore();
+    }
+
+    function drawNode(x, y, val, color, opacity) {
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        
+        if (color !== COLORS.normal) {
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 20;
+        }
+
+        // Draw Node Body
+        drawRoundRectPath(ctx, x, y, NODE_WIDTH - POINTER_WIDTH, NODE_HEIGHT, [8, 0, 0, 8]);
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw Pointer Box
+        drawRoundRectPath(ctx, x + NODE_WIDTH - POINTER_WIDTH, y, POINTER_WIDTH, NODE_HEIGHT, [0, 8, 8, 0]);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; 
+        ctx.fill();
+        ctx.stroke();
+
+        // Pointer Dot
+        ctx.beginPath();
+        ctx.arc(x + NODE_WIDTH - POINTER_WIDTH/2, y + NODE_HEIGHT/2, 4, 0, Math.PI*2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+
+        // Value
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 20px Inter';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(val, x + (NODE_WIDTH - POINTER_WIDTH)/2, y + NODE_HEIGHT/2);
+
+        ctx.restore();
+    }
+
+    function drawLink(x1, y1, x2, y2, opacity) {
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        const cp1x = x1 + (x2 - x1) / 2;
+        const cp2x = x2 - (x2 - x1) / 2;
+        ctx.bezierCurveTo(cp1x, y1 + 20, cp2x, y2 + 20, x2, y2);
+        ctx.stroke();
+
+        const headLen = 10;
+        ctx.beginPath();
+        ctx.moveTo(x2, y2); 
+        ctx.lineTo(x2 - headLen, y2 - 5);
+        ctx.lineTo(x2 - headLen, y2 + 5);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function drawNull(x, y, opacity) {
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 30, y);
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(x + 30, y - 15, 40, 30);
+        ctx.strokeRect(x + 30, y - 15, 40, 30);
+        
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.font = '10px Inter';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("NULL", x + 50, y);
+
+        ctx.restore();
+    }
+
+    function drawLabel(x, y, text) {
+        ctx.save();
+        ctx.fillStyle = '#4d8dff';
+        ctx.font = 'bold 14px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, x, y);
+        
+        ctx.strokeStyle = '#4d8dff';
+        ctx.beginPath();
+        if (y < 0) { // Top label
+            ctx.moveTo(x, y + 5);
+            ctx.lineTo(x, y + 15);
+        } else { // Bottom label
+            ctx.moveTo(x, y - 15);
+            ctx.lineTo(x, y - 5);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawArray(step) {
+        const div = document.getElementById('arrayVisual');
+        div.innerHTML = '';
+        const data = step ? step.listSnapshot : list;
+        
+        data.forEach((node, i) => {
+            const cell = document.createElement('div');
+            cell.className = 'array-cell';
+            cell.innerHTML = `${node.val}<span class="idx">${i}</span>`;
+            if (step) {
+                if (step.type === 'traverse' && i === step.targetIndex) cell.classList.add('traverse');
+                if (step.type === 'highlight' && i === step.targetIndex) cell.classList.add('active');
+            }
+            div.appendChild(cell);
+        });
+    }
+
+    // --- Helpers ---
+    function getVal() {
+        const el = document.getElementById('valInput');
+        if (!el || el.value === '') {
+            el.focus();
+            return null;
+        }
+        const v = parseInt(el.value);
+        if (isNaN(v)) return null;
+        el.value = '';
+        el.focus();
+        return v;
+    }
+    function getIdx() {
+        const el = document.getElementById('idxInput');
+        if (!el || el.value === '') return null;
+        const v = parseInt(el.value);
+        if (isNaN(v)) return null;
+        el.value = '';
+        return v;
+    }
+    function handleEnter(e) { if(e.key === 'Enter') handleAddLast(); }
+    
+    function disableControls(dis) {
+        document.querySelectorAll('button:not(.zoom-btn)').forEach(b => b.disabled = dis);
+        document.querySelectorAll('input').forEach(i => i.disabled = dis);
+    }
+    function showStatus(msg) {
+        const el = document.getElementById('statusMessage');
+        el.textContent = msg;
+        el.classList.add('show');
+        if (!isAnimating) setTimeout(() => el.classList.remove('show'), 2000);
+    }
+
+    // Camera
+    function zoomIn() { scale = Math.min(scale * 1.2, 2); drawList(null); }
+    function zoomOut() { scale = Math.max(scale / 1.2, 0.5); drawList(null); }
+    function resetView() { offsetX = 0; offsetY = 0; scale = 1; drawList(null); }
+
+    // Init
+    resizeCanvas();
+    drawList(null);
+    showStatus("Ready");
+
+</script>
 </body>
 </html>

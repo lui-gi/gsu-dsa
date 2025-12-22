@@ -306,8 +306,8 @@
 
         /* Status Message */
         .status-message {
-            position: fixed;
-            top: 90px;
+            position: absolute;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(15, 23, 42, 0.9);
@@ -369,6 +369,8 @@
                 <button class="zoom-btn" onclick="zoomOut()">−</button>
                 <button class="zoom-btn" onclick="resetView()">↺</button>
             </div>
+
+            <div class="status-message" id="statusMessage"></div>
         </div>
 
         <div id="array-container">
@@ -376,8 +378,6 @@
             <div class="array-box" id="arrayVisual"></div>
         </div>
     </div>
-
-    <div class="status-message" id="statusMessage"></div>
 
 <script>
     // --- Configuration ---
