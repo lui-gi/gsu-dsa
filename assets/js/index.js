@@ -1,23 +1,47 @@
 const menuData = [
     {
         name: "System",
-        items: ["About GSU DSA"]
+        icon: "fa-solid fa-gear",
+        items: [
+            { name: "About GSU DSA", icon: "fa-solid fa-circle-info" }
+        ]
     },
     {
         name: "Linear Structures",
-        items: ["Stack", "Queue", "Singly Linked List", "Doubly Linked List"]
+        icon: "fa-solid fa-bars",
+        items: [
+            { name: "Stack", icon: "fa-solid fa-layer-group" },
+            { name: "Queue", icon: "fa-solid fa-bars-staggered" },
+            { name: "Singly Linked List", icon: "fa-solid fa-link" },
+            { name: "Doubly Linked List", icon: "fa-solid fa-arrows-left-right" }
+        ]
     },
     {
         name: "Key-Value Stores",
-        items: ["Dictionary", "Hash Table"]
+        icon: "fa-solid fa-key",
+        items: [
+            { name: "Dictionary", icon: "fa-solid fa-book" },
+            { name: "Hash Table", icon: "fa-solid fa-hashtag" }
+        ]
     },
     {
         name: "Trees",
-        items: ["Binary Tree", "Heap", "AVL Tree", "Trie"]
+        icon: "fa-solid fa-diagram-project",
+        items: [
+            { name: "Binary Tree", icon: "fa-solid fa-code-fork" },
+            { name: "Heap", icon: "fa-solid fa-sitemap" },
+            { name: "AVL Tree", icon: "fa-solid fa-code-merge" },
+            { name: "Trie", icon: "fa-solid fa-chart-diagram" }
+        ]
     },
     {
         name: "Graphs & Algorithms",
-        items: ["Graph Representation", "Topological Sort", "Dijkstra's Algorithm"]
+        icon: "fa-solid fa-bezier-curve",
+        items: [
+            { name: "Graph Representation", icon: "fa-solid fa-project-diagram" },
+            { name: "Topological Sort", icon: "fa-solid fa-arrow-down-short-wide" },
+            { name: "Dijkstra's Algorithm", icon: "fa-solid fa-route" }
+        ]
     }
 ];
 
@@ -48,7 +72,7 @@ const itemToPath = {
 };
 
 let currentCat = 1; // Start at Linear Structures
-let currentItem = 1; // Start at Queue
+let currentItem = 0; // Start at Stack (first item)
 
 const rowEl = document.getElementById('category-row');
 
@@ -76,6 +100,8 @@ function render() {
         const icon = document.createElement('div');
         icon.className = 'cat-icon';
         icon.style.cursor = 'pointer';
+        // Add Font Awesome icon to category
+        icon.innerHTML = `<i class="${cat.icon}" style="font-size: 48px; color: #0039A6;"></i>`;
         // Click on category icon to navigate to that category
         icon.addEventListener('click', () => {
             currentCat = cIdx;
@@ -87,26 +113,26 @@ function render() {
         col.className = 'item-col';
         col.id = `col-${cIdx}`;
 
-        cat.items.forEach((txt, iIdx) => {
+        cat.items.forEach((itemObj, iIdx) => {
             const item = document.createElement('div');
             item.className = 'item';
             item.style.cursor = 'pointer';
-            // We use innerHTML to insert the square icon and text
-            item.innerHTML = `<div class="item-icon"></div><span>${txt}</span>`;
+            // Use Font Awesome icons instead of square icons
+            item.innerHTML = `<i class="${itemObj.icon} item-fa-icon"></i><span>${itemObj.name}</span>`;
             // Click on menu item to select it and load in iframe
             item.addEventListener('click', () => {
                 if (currentCat === cIdx) {
                     currentItem = iIdx;
                     updatePos();
                     // Load the clicked item in iframe
-                    loadInIframe(txt);
+                    loadInIframe(itemObj.name);
                 } else {
                     // If clicking an item from a different category, switch to that category first
                     currentCat = cIdx;
                     currentItem = iIdx;
                     updatePos();
                     // Load the clicked item in iframe
-                    loadInIframe(txt);
+                    loadInIframe(itemObj.name);
                 }
             });
             col.appendChild(item);
@@ -219,7 +245,7 @@ document.addEventListener('keydown', (e) => {
         }
     } else if(e.key === 'Enter') {
         // Load the current item in iframe
-        const itemName = menuData[currentCat].items[currentItem];
+        const itemName = menuData[currentCat].items[currentItem].name;
         loadInIframe(itemName);
     } else if(e.key === 'Escape') {
         // Close iframe

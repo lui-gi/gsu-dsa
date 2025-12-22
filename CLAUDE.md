@@ -1,0 +1,140 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+GSU DSA is a static educational website for Georgia State University students taking CS 2720 / Data Structures. The project provides interactive visualizations for data structures and algorithms covered in Dr. Islam's course, with a PlayStation-inspired navigation interface.
+
+## Architecture
+
+### Navigation System (index.html)
+
+The main entry point features a PlayStation XMB-style menu system with:
+
+- **Horizontal Navigation**: Category selection (System, Linear Structures, Key-Value Stores, Trees, Graphs & Algorithms)
+- **Vertical Navigation**: Item selection within each category
+- **Site Title**: "gsu dsa" displayed in top-right corner using monospace font
+- **Visual System**: CSS custom properties control layout (icon size, spacing, positioning)
+- **State Management**: Pure JavaScript manages `currentCat` and `currentItem` indices
+- **Key Constants**:
+  - `ICON_SPACING`: 200px - horizontal distance between category icons
+  - `ITEM_HEIGHT`: 80px - vertical spacing for menu items
+  - `--selection-gap`: 180px - CSS variable for active item offset
+
+**Navigation Logic**: The active item uses `margin-top: var(--selection-gap)` to create visual space for the category icon to sit in. When navigating vertically, `col.style.transform = translateY(${scrollY}px)` scrolls the item list while the gap creates the signature look.
+
+### Data Structure Visualizations (structures/)
+
+Each visualization is a self-contained HTML file with embedded CSS and JavaScript.
+
+**Example: heap.html**
+
+- **Glass Morphism Design**: GSU blue color palette (`--gsu-blue: #0039A6`) with backdrop-filter blur effects
+- **Dual Visualization**:
+  - Canvas-based tree view with pan/zoom (mouse drag, scroll wheel, touch gestures)
+  - Array representation showing heap structure with index labels
+- **Animation Queue System**: Operations (insert, remove, heapify) push animation steps to `animationQueue`, then `runAnimation()` processes them sequentially
+- **State Variables**:
+  - `heap`: array storing heap values
+  - `isMaxHeap`: boolean for min/max heap type
+  - `scale`, `offsetX`, `offsetY`: pan/zoom transformation state
+  - `isDragging`: mouse interaction state
+- **Key Functions**:
+  - `insert(value)`: Adds value and bubbles up, recording animation steps
+  - `removeRoot()`: Removes root and sinks down, recording animation steps
+  - `buildHeap(arr)`: Heapifies array using heapifyDown
+  - `runAnimation()`: Processes animation queue with timing and visual updates
+  - `drawTree(step, movingNodes)`: Renders tree with canvas transformations
+  - `calculatePositions(count)`: Recursively calculates node positions
+
+**Canvas Transform Pattern**: All drawing operations are wrapped in `ctx.save()` / `ctx.restore()` with `ctx.translate(offsetX, offsetY)` and `ctx.scale(scale, scale)` applied for pan/zoom.
+
+## Typography
+
+The site uses a monospace font stack throughout for a technical, CS-focused aesthetic:
+- **Font Family**: `'Consolas', 'Monaco', 'Courier New', monospace`
+- **Base Font Size**: 18px
+- **Title Font Size**: 32px (for "gsu dsa" branding)
+- **Category Labels**: 22px
+
+This creates a cohesive, code-inspired look that complements the data structures educational theme.
+
+## File Structure
+
+```
+/
+├── index.html          # Main navigation page
+├── CLAUDE.md          # This file
+├── README.md          # Project documentation
+├── structures/
+│   └── heap.html      # Heap visualization (others planned)
+└── assets/
+    ├── css/
+    │   └── index.css  # Navigation styles
+    ├── js/
+    │   └── index.js   # Navigation logic and menuData
+    └── images/        # Placeholder for future assets
+```
+
+## Development Workflow
+
+### Opening/Testing
+
+Open HTML files directly in a browser. No build process or server required.
+
+### Adding New Data Structures
+
+1. Create new HTML file in `structures/` directory
+2. Follow heap.html pattern:
+   - Include GSU color palette CSS variables
+   - Implement glass morphism styling
+   - Use animation queue pattern for operation visualization
+   - Support both tree/graph view and array representation where applicable
+3. Add navigation entry in `assets/js/index.js` menuData array
+
+### Design Patterns
+
+**Animation Queue Pattern**: Instead of direct DOM manipulation, queue animation steps with metadata:
+```javascript
+animationQueue.push({
+  type: 'swap',           // Animation type
+  heapSnapshot: [...],    // Data snapshot
+  targets: [i, j],        // Highlighted indices
+  swapIndices: [i, j]     // For position interpolation
+});
+```
+
+**Canvas Pan/Zoom Pattern**: Track offset and scale state, apply transformations in drawing function:
+```javascript
+ctx.save();
+ctx.translate(offsetX, offsetY);
+ctx.scale(scale, scale);
+// ... draw operations ...
+ctx.restore();
+```
+
+**Glass Morphism Styling**: Use layered approach:
+```css
+background: rgba(255, 255, 255, 0.9);
+backdrop-filter: blur(40px) saturate(180%);
+border: 1px solid rgba(0, 57, 166, 0.1);
+box-shadow: 0 8px 32px rgba(0, 57, 166, 0.08);
+```
+
+## Design Constraints
+
+- **GSU Colors**: Blue (#0039A6) primary, Red (#CC0000) for highlights
+- **Typography**: Monospace font stack (Consolas/Monaco/Courier New) for tech aesthetic
+- **Self-Contained Files**: Each visualization should work standalone
+- **No Dependencies**: Pure HTML/CSS/JS, no frameworks or build tools
+- **Mobile Support**: Touch events for pan/zoom on visualizations
+- **Accessibility**: High contrast, readable font sizes (18px+ for body text)
+
+## To-Dos:
+
+-**Remove universal "Back" button**: I want to give each structure its own back button within their respective .html implementation rather than one universal button. I already have one back button inside of heap.html, now I need to add it to about.html.
+-**Add icons**: Use appropriate FREE icons from front awesome and implement them as necessary. for example we can use "<i class="fa-solid fa-diagram-project"></i>
+- **Implement functionality for the structures**: Use heap.html as a UI template/baseline, then incorporate the other structures by folder.
+- **Add loading screen animation**: Should adhere to the GSU design philosophoy and color guidelines.
+- **Fix starting position**: The site starts at linear structures, however one item is already above the horizontal item (stack is above "linear structures"). fix = the default starting status of the website is for stack to be below linear structures
