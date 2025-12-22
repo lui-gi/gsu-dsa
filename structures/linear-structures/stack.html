@@ -404,7 +404,7 @@
     // Camera Controls (Pan & Zoom)
     let offsetX = 0;
     let offsetY = 0;
-    let scale = 1;
+    let scale = 0.75; // Default zoom out to show bottom of stack
     let isDragging = false;
     let dragStartX = 0;
     let dragStartY = 0;
@@ -415,8 +415,19 @@
         const wrapper = document.getElementById('canvas-wrapper');
         canvas.width = wrapper.offsetWidth;
         canvas.height = wrapper.offsetHeight;
+
+        // Center the view after resize
+        centerView();
+
         if (!isAnimating) drawStack(null);
     }
+
+    function centerView() {
+        // Calculate offset to center the scaled content
+        offsetX = canvas.width * (1 - scale) / 2;
+        offsetY = canvas.height * (1 - scale) / 2;
+    }
+
     window.addEventListener('resize', resizeCanvas);
     setTimeout(resizeCanvas, 100);
 
@@ -577,7 +588,7 @@
                 // Drop Animation
                 const startTime = performance.now();
                 const startY = 50; // Top of canvas
-                const endY = getStackBottomY() - (step.stackSnapshot.length * NODE_HEIGHT);
+                const endY = getStackBottomY() - ((step.stackSnapshot.length + 1) * NODE_HEIGHT);
                 
                 const animateDrop = (time) => {
                     let progress = (time - startTime) / duration;
@@ -600,7 +611,7 @@
             } else if (step.type === 'float-out') {
                 // Pop Animation
                 const startTime = performance.now();
-                const startY = getStackBottomY() - (step.targetIndex * NODE_HEIGHT);
+                const startY = getStackBottomY() - ((step.targetIndex + 1) * NODE_HEIGHT);
                 const endY = startY - 150; // Float up 150px
                 
                 const animatePop = (time) => {
@@ -680,14 +691,22 @@
         ctx.shadowBlur = 10;
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 4;
-        
+
         const tubeWidth = NODE_WIDTH + CONTAINER_PADDING;
         const tubeHeight = (MAX_STACK_SIZE * NODE_HEIGHT) + 20;
-        
+        const cornerRadius = 15; // Subtle corner rounding
+
         ctx.beginPath();
+        // Left side
         ctx.moveTo(centerX - tubeWidth/2, bottomY - tubeHeight);
-        ctx.lineTo(centerX - tubeWidth/2, bottomY + 10);
-        ctx.arc(centerX, bottomY + 10, tubeWidth/2, Math.PI, 0, true); // Curved bottom
+        ctx.lineTo(centerX - tubeWidth/2, bottomY - cornerRadius);
+        // Bottom-left corner
+        ctx.arcTo(centerX - tubeWidth/2, bottomY, centerX - tubeWidth/2 + cornerRadius, bottomY, cornerRadius);
+        // Bottom
+        ctx.lineTo(centerX + tubeWidth/2 - cornerRadius, bottomY);
+        // Bottom-right corner
+        ctx.arcTo(centerX + tubeWidth/2, bottomY, centerX + tubeWidth/2, bottomY - cornerRadius, cornerRadius);
+        // Right side
         ctx.lineTo(centerX + tubeWidth/2, bottomY - tubeHeight);
         ctx.stroke();
         ctx.restore();
@@ -798,9 +817,8 @@
     }
 
     function resetView() {
-        offsetX = 0;
-        offsetY = 0;
-        scale = 1;
+        scale = 0.75; // Reset to default zoom level
+        centerView(); // Recenter the view
         drawStack(null);
     }
 
