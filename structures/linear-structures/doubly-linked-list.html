@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
         :root {
-            /* Palette matched to theme */
             --gsu-blue: #0039A6;
             --gsu-blue-light: #4d8dff;
             --text-main: #ffffff;
@@ -16,12 +15,11 @@
             --glass-bg: rgba(15, 23, 42, 0.65);
             --glass-border: rgba(255, 255, 255, 0.15);
             
-            /* Node Colors */
             --node-normal: #0039A6;
-            --node-active: #CC0000;  /* Deletion Target */
-            --node-traverse: #ffc107; /* Traversal */
-            --node-success: #28a745; /* Success / New Node */
-            --node-sentinel: #1e293b; /* Darker for Header/Trailer */
+            --node-active: #CC0000;
+            --node-traverse: #ffc107;
+            --node-success: #28a745;
+            --node-sentinel: #1e293b;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -87,6 +85,7 @@
             align-items: center;
             justify-content: space-between;
             background: rgba(255, 255, 255, 0.03);
+            z-index: 20; 
         }
 
         .header-left { display: flex; align-items: center; gap: 20px; }
@@ -180,6 +179,7 @@
             background: rgba(0,0,0,0.2);
             overflow: hidden;
             cursor: grab;
+            z-index: 1; /* Ensure base level */
         }
         #canvas-wrapper:active { cursor: grabbing; }
 
@@ -187,7 +187,75 @@
             display: block;
             width: 100%;
             height: 100%;
+            touch-action: none; /* Prevent scroll on mobile */
         }
+
+        /* --- OVERLAY UI (TOP LEFT) --- */
+        .overlay-ui-container {
+            position: absolute;
+            top: 20px; 
+            left: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            z-index: 10;
+        }
+
+        /* Legend */
+        .legend {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 10px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            pointer-events: none; /* Allow clicks to pass through transparent parts if needed, but background covers */
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+
+        /* Cycles Control in Overlay */
+        .cycles-wrapper {
+            position: relative;
+        }
+        .cycles-btn {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--glass-border);
+            padding: 10px 16px;
+            height: 100%; /* Match legend height approx */
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+        }
+        .cycles-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .cycles-btn.active { border-color: var(--gsu-blue-light); color: var(--gsu-blue-light); }
+
+        .cycles-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 8px;
+            width: 200px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            padding: 12px;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .cycles-dropdown.show { display: flex; }
+
+        .dropdown-label { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
+        .dropdown-row { display: flex; gap: 8px; }
+        .divider { height: 1px; background: var(--glass-border); width: 100%; }
 
         /* Camera Controls */
         .zoom-controls {
@@ -197,6 +265,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            z-index: 10;
         }
         .zoom-btn {
             width: 40px; height: 40px;
@@ -209,27 +278,7 @@
         }
         .zoom-btn:hover { background: rgba(255,255,255,0.1); }
 
-        /* Legend */
-        .legend {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(10px);
-            padding: 12px 16px;
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            font-size: 12px;
-            color: var(--text-muted);
-            pointer-events: none;
-        }
-        .legend-item { display: flex; align-items: center; gap: 8px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
-
-        /* Status Message (Updated as requested) */
+        /* Status Message */
         .status-message {
             position: absolute;
             top: 20px;
@@ -244,7 +293,7 @@
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.3s;
-            z-index: 1000;
+            z-index: 5;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .status-message.show { opacity: 1; }
@@ -260,7 +309,6 @@
             flex-direction: column;
             justify-content: center;
         }
-
         .array-label {
             font-size: 12px;
             text-transform: uppercase;
@@ -269,7 +317,6 @@
             margin-bottom: 12px;
             font-weight: 600;
         }
-
         .array-box {
             display: flex;
             gap: 12px;
@@ -281,7 +328,6 @@
         .array-box::-webkit-scrollbar { height: 6px; }
         .array-box::-webkit-scrollbar-track { background: transparent; }
         .array-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
-
         .array-cell {
             min-width: 44px;
             height: 44px;
@@ -308,6 +354,8 @@
         }
         .array-cell.active { border-color: #CC0000; box-shadow: 0 0 15px rgba(204, 0, 0, 0.3); background: rgba(204,0,0,0.1); }
         .array-cell.sentinel { border-color: #94a3b8; border-style: dashed; opacity: 0.7; }
+        .array-cell.tortoise { border-color: #28a745; box-shadow: 0 0 10px #28a745; }
+        .array-cell.hare { border-color: #ffc107; box-shadow: 0 0 10px #ffc107; }
 
     </style>
 </head>
@@ -355,11 +403,33 @@
 
             <div class="status-message" id="statusMessage"></div>
 
-            <div class="legend">
-                <div class="legend-item"><div class="dot" style="color: var(--node-normal); background: currentColor;"></div>Data Node</div>
-                <div class="legend-item"><div class="dot" style="color: var(--node-sentinel); background: currentColor;"></div>Sentinel</div>
-                <div class="legend-item"><div class="dot" style="color: var(--node-traverse); background: currentColor;"></div>Traversal</div>
-                <div class="legend-item"><div class="dot" style="color: var(--node-active); background: currentColor;"></div>Target</div>
+            <div class="overlay-ui-container">
+                <div class="legend">
+                    <div class="legend-item"><div class="dot" style="color: var(--node-normal); background: currentColor;"></div>Data Node</div>
+                    <div class="legend-item"><div class="dot" style="color: var(--node-sentinel); background: currentColor;"></div>Sentinel</div>
+                    <div class="legend-item"><div class="dot" style="color: var(--node-active); background: currentColor;"></div>Active</div>
+                </div>
+
+                <div class="cycles-wrapper">
+                    <button id="cyclesBtn" class="cycles-btn" onclick="toggleCyclesMenu(event)">
+                        <i class="fa-solid fa-spin fa-circle-notch"></i> Cycles
+                    </button>
+                    
+                    <div class="cycles-dropdown" id="cyclesMenu" onclick="event.stopPropagation()">
+                        <div class="dropdown-section">
+                            <div class="dropdown-label">INSERT CYCLE</div>
+                            <div class="dropdown-row">
+                                <input type="number" id="cycleIdxInput" placeholder="Idx" style="width: 60px; background: rgba(0,0,0,0.5);">
+                                <button onclick="handleCreateCycle()" style="flex-grow:1; font-size: 11px;">Link Tail</button>
+                            </div>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="dropdown-section">
+                            <div class="dropdown-label">FLOYD'S ALGO</div>
+                            <button onclick="handleDetectCycle()" style="width: 100%; font-size: 11px;">Detect Cycle</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="zoom-controls">
@@ -370,7 +440,7 @@
         </div>
 
         <div id="array-container">
-            <div class="array-label">Logical Index</div>
+            <div class="array-label">Logical List</div>
             <div class="array-box" id="arrayVisual"></div>
         </div>
     </div>
@@ -388,19 +458,18 @@
     const canvas = document.getElementById('listCanvas');
     const ctx = canvas.getContext('2d');
     
-    // Node Dimensions
-    const NODE_WIDTH = 140; // Wider for 3 sections
-    const NODE_HEIGHT = 60;
-    const POINTER_WIDTH = 30; // Small pointer boxes on ends
-    const NODE_GAP = 60;
+    // REDUCED Node Dimensions for better camera fit
+    const NODE_WIDTH = 110; 
+    const NODE_HEIGHT = 50;
+    const POINTER_WIDTH = 25;
+    const NODE_GAP = 50;
 
     // State
-    // List includes Sentinels visually, but logic often treats them special
-    // We will initialize with Header and Trailer
     let list = [];
     let animationQueue = [];
     let isAnimating = false;
     let nextId = 1;
+    let cycleTargetIndex = -1; 
 
     // Camera State
     let offsetX = 0;
@@ -412,25 +481,32 @@
     let lastOffsetX = 0;
     let lastOffsetY = 0;
 
-    // Initialize with Sentinels
     function initList() {
         list = [
-            { val: 'HEADER', type: 'sentinel', id: 'H' },
-            { val: 'TRAILER', type: 'sentinel', id: 'T' }
+            { val: 'HEAD', type: 'sentinel', id: 'H' },
+            { val: 'TRAIL', type: 'sentinel', id: 'T' }
         ];
+        cycleTargetIndex = -1;
     }
 
+    // --- Resize & Init ---
     function resizeCanvas() {
         const wrapper = document.getElementById('canvas-wrapper');
-        if (wrapper) {
+        if (wrapper && wrapper.offsetWidth > 0) {
             canvas.width = wrapper.offsetWidth;
             canvas.height = wrapper.offsetHeight;
         }
         if (!isAnimating) drawList(null);
     }
-    window.addEventListener('resize', resizeCanvas);
     
-    // Camera Logic
+    // Ensure initial load works even if DOM isn't fully ready immediately
+    window.onload = function() {
+        resizeCanvas();
+        setTimeout(resizeCanvas, 500); // Safety check
+    };
+    window.addEventListener('resize', resizeCanvas);
+
+    // --- Camera Logic ---
     canvas.addEventListener('mousedown', (e) => {
         isDragging = true;
         dragStartX = e.clientX;
@@ -455,38 +531,60 @@
         if (!isAnimating) drawList(null);
     });
 
-    // --- Logic & Operations ---
+    // --- Dropdown Logic ---
+    function toggleCyclesMenu(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('cyclesMenu');
+        const btn = document.getElementById('cyclesBtn');
+        const isOpen = menu.classList.contains('show');
+        
+        if (isOpen) {
+            menu.classList.remove('show');
+            btn.classList.remove('active');
+        } else {
+            menu.classList.add('show');
+            btn.classList.add('active');
+        }
+    }
+    document.addEventListener('click', () => {
+        const menu = document.getElementById('cyclesMenu');
+        const btn = document.getElementById('cyclesBtn');
+        if (menu.classList.contains('show')) {
+            menu.classList.remove('show');
+            btn.classList.remove('active');
+        }
+    });
 
-    // Note: Logical Index 0 is list[1] (After Header)
-    // list[0] is Header, list[length-1] is Trailer
+    // --- Core Operations ---
+    // Mapping: Physical Index 0=HEAD, 1=FirstData, ..., N=TRAIL
 
-    function handleAddFirst() {
-        const val = getVal();
-        if (val === null) return;
+    function handleAddLast() {
+        if (cycleTargetIndex !== -1) { showStatus("Reset cycle before editing"); return; }
+        const val = getVal(); if (val === null) return;
         
         animationQueue = [];
         const newNode = { val, id: nextId++, type: 'data' };
         
-        // Insert physically after Header (index 1)
-        animationQueue.push({ type: 'spawn', listSnapshot: insertAtSnapshot(1, newNode), targetIndex: 1 });
-        list.splice(1, 0, newNode);
-        animationQueue.push({ type: 'success', listSnapshot: [...list], targetIndex: 1 });
+        // Insert before Trailer
+        const insertIdx = list.length - 1;
+        
+        animationQueue.push({ type: 'highlight-neighbors', listSnapshot: [...list], activeIndices: [insertIdx-1, insertIdx] });
+        animationQueue.push({ type: 'spawn', listSnapshot: insertAtSnapshot(insertIdx, newNode), targetIndex: insertIdx });
+        list.splice(insertIdx, 0, newNode);
+        animationQueue.push({ type: 'success', listSnapshot: [...list], targetIndex: insertIdx });
         
         runAnimation();
     }
 
-    function handleAddLast() {
-        const val = getVal();
-        if (val === null) return;
+    function handleAddFirst() {
+        if (cycleTargetIndex !== -1) { showStatus("Reset cycle before editing"); return; }
+        const val = getVal(); if (val === null) return;
         
         animationQueue = [];
         const newNode = { val, id: nextId++, type: 'data' };
         
-        // Insert physically before Trailer (index length-1)
-        const insertIdx = list.length - 1;
-        
-        // O(1) visual check: Highlight Trailer and its prev
-        animationQueue.push({ type: 'highlight-neighbors', listSnapshot: [...list], activeIndices: [insertIdx-1, insertIdx] });
+        // Insert after Header
+        const insertIdx = 1;
         
         animationQueue.push({ type: 'spawn', listSnapshot: insertAtSnapshot(insertIdx, newNode), targetIndex: insertIdx });
         list.splice(insertIdx, 0, newNode);
@@ -495,68 +593,57 @@
         runAnimation();
     }
 
-    function handleDeleteFirst() {
-        if (list.length <= 2) { showStatus("List is empty!"); return; } // Only sentinels
+    function handleDeleteLast() {
+        if (cycleTargetIndex !== -1) { showStatus("Reset cycle before editing"); return; }
+        if (list.length <= 2) { showStatus("List is empty!"); return; }
         
         animationQueue = [];
-        const targetIdx = 1;
+        const targetIdx = list.length - 2; // Before Trailer
         
         animationQueue.push({ type: 'highlight', listSnapshot: [...list], targetIndex: targetIdx });
         animationQueue.push({ type: 'fade-out', listSnapshot: [...list], targetIndex: targetIdx });
-        
         list.splice(targetIdx, 1);
         animationQueue.push({ type: 'idle', listSnapshot: [...list] });
         runAnimation();
     }
 
-    function handleDeleteLast() {
+    function handleDeleteFirst() {
+        if (cycleTargetIndex !== -1) { showStatus("Reset cycle before editing"); return; }
         if (list.length <= 2) { showStatus("List is empty!"); return; }
         
         animationQueue = [];
-        const targetIdx = list.length - 2; // Node before Trailer
+        const targetIdx = 1; // After Header
         
-        // O(1) operation visual
         animationQueue.push({ type: 'highlight', listSnapshot: [...list], targetIndex: targetIdx });
         animationQueue.push({ type: 'fade-out', listSnapshot: [...list], targetIndex: targetIdx });
-        
         list.splice(targetIdx, 1);
         animationQueue.push({ type: 'idle', listSnapshot: [...list] });
         runAnimation();
     }
 
     function handleInsertAt() {
-        const val = getVal();
-        const idx = getIdx();
-        if (val === null || idx === null) return;
+        if (cycleTargetIndex !== -1) { showStatus("Reset cycle before editing"); return; }
+        const val = getVal(); const idx = getIdx(); if (val === null || idx === null) return;
         
-        // Logical index to physical index conversion
-        // Logical 0 -> Physical 1
-        // Max Logical = list.length - 2
         const physicalIdx = idx + 1;
-        
         if (physicalIdx < 1 || physicalIdx > list.length - 1) { showStatus("Index out of bounds"); return; }
 
         if (physicalIdx === 1) { handleAddFirst(); return; }
         if (physicalIdx === list.length - 1) { handleAddLast(); return; }
 
         animationQueue = [];
-        
-        // Traversal
-        for (let i = 1; i < physicalIdx; i++) {
-            animationQueue.push({ type: 'traverse', listSnapshot: [...list], targetIndex: i, msg: `Traversing...` });
-        }
+        for(let i=1; i<physicalIdx; i++) animationQueue.push({ type: 'traverse', listSnapshot: [...list], targetIndex: i });
         
         const newNode = { val, id: nextId++, type: 'data' };
         animationQueue.push({ type: 'spawn', listSnapshot: insertAtSnapshot(physicalIdx, newNode), targetIndex: physicalIdx });
         list.splice(physicalIdx, 0, newNode);
         animationQueue.push({ type: 'success', listSnapshot: [...list], targetIndex: physicalIdx });
-        
         runAnimation();
     }
 
     function handleDeleteAt() {
-        const idx = getIdx();
-        if (idx === null) return;
+        if (cycleTargetIndex !== -1) { showStatus("Reset cycle before editing"); return; }
+        const idx = getIdx(); if (idx === null) return;
         
         const physicalIdx = idx + 1;
         if (physicalIdx < 1 || physicalIdx > list.length - 2) { showStatus("Index out of bounds"); return; }
@@ -565,18 +652,79 @@
         if (physicalIdx === list.length - 2) { handleDeleteLast(); return; }
 
         animationQueue = [];
-        
-        // Traversal
-        for (let i = 1; i < physicalIdx; i++) {
-             animationQueue.push({ type: 'traverse', listSnapshot: [...list], targetIndex: i });
-        }
+        for(let i=1; i<physicalIdx; i++) animationQueue.push({ type: 'traverse', listSnapshot: [...list], targetIndex: i });
         
         animationQueue.push({ type: 'highlight', listSnapshot: [...list], targetIndex: physicalIdx });
         animationQueue.push({ type: 'fade-out', listSnapshot: [...list], targetIndex: physicalIdx });
-        
         list.splice(physicalIdx, 1);
         animationQueue.push({ type: 'idle', listSnapshot: [...list] });
         runAnimation();
+    }
+
+    function handleCreateCycle() {
+        const idxInput = document.getElementById('cycleIdxInput');
+        if (!idxInput || idxInput.value === '') return;
+        const logicalIdx = parseInt(idxInput.value);
+        if (isNaN(logicalIdx)) return;
+        const physicalIdx = logicalIdx + 1;
+
+        if (physicalIdx < 1 || physicalIdx >= list.length - 1) { showStatus("Invalid Cycle Target"); return; }
+
+        animationQueue = [];
+        cycleTargetIndex = physicalIdx;
+        animationQueue.push({ 
+            type: 'cycle-created', listSnapshot: [...list], 
+            msg: `Cycle Created! Tail -> Node ${logicalIdx}`
+        });
+        runAnimation();
+        idxInput.value = '';
+        document.getElementById('cyclesMenu').classList.remove('show');
+        document.getElementById('cyclesBtn').classList.remove('active');
+    }
+
+    function handleDetectCycle() {
+        if (list.length <= 2) { showStatus("List too short"); return; }
+        
+        document.getElementById('cyclesMenu').classList.remove('show');
+        document.getElementById('cyclesBtn').classList.remove('active');
+        animationQueue = [];
+
+        let tortoise = 0; let hare = 0;
+        
+        animationQueue.push({ type: 'floyd-step', listSnapshot: [...list], tortoise: 0, hare: 0, msg: "T & H start at HEAD" });
+
+        let found = false; let steps = 0; const maxSteps = 50;
+
+        while (steps < maxSteps) {
+            tortoise = getNextIndex(tortoise);
+            let nextHare = getNextIndex(hare);
+            if (nextHare !== -1) hare = getNextIndex(nextHare);
+            else hare = -1;
+
+            if (tortoise === -1 || hare === -1) {
+                animationQueue.push({ 
+                    type: 'floyd-step', listSnapshot: [...list], 
+                    tortoise: (tortoise===-1?list.length-1:tortoise), hare: list.length-1, 
+                    msg: "Reached NULL. No Cycle." 
+                });
+                break;
+            }
+
+            animationQueue.push({ type: 'floyd-step', listSnapshot: [...list], tortoise, hare });
+
+            if (tortoise === hare) {
+                found = true;
+                animationQueue.push({ type: 'floyd-collision', listSnapshot: [...list], targetIndex: tortoise, tortoise, hare, msg: "Collision! Cycle Detected!" });
+                break;
+            }
+            steps++;
+        }
+        runAnimation();
+    }
+
+    function getNextIndex(currIdx) {
+        if (currIdx === list.length - 1) return (cycleTargetIndex !== -1) ? cycleTargetIndex : -1;
+        return currIdx + 1;
     }
 
     function handleClear() {
@@ -606,24 +754,20 @@
                 disableControls(false);
                 drawList(null);
                 drawArray(null);
-                showStatus("Ready");
+                const lastStep = animationQueue[animationQueue.length-1];
+                if (!lastStep.msg || lastStep.msg !== "Collision! Cycle Detected!") showStatus("Ready");
                 return;
             }
             const step = animationQueue[stepIndex++];
             let duration = 600;
-            
             if (step.msg) showStatus(step.msg);
-
             drawArray(step);
 
-            if (step.type === 'spawn') {
-                drawList(step);
-                setTimeout(process, duration);
-            } else if (step.type === 'traverse') {
-                duration = 400;
-                drawList(step);
-                setTimeout(process, duration);
-            } else if (step.type === 'fade-out') {
+            if (step.type === 'floyd-step') duration = 800;
+            else if (step.type === 'floyd-collision') duration = 2000;
+            else if (step.type === 'traverse') duration = 300;
+            
+            if (step.type === 'fade-out') {
                 const startTime = performance.now();
                 const animateFade = (time) => {
                     let p = (time - startTime) / duration;
@@ -641,31 +785,19 @@
         process();
     }
 
-    // --- Drawing Helpers ---
+    // --- Drawing Helper (Polyfill) ---
     function drawRoundRectPath(ctx, x, y, width, height, radii) {
-        if (typeof ctx.roundRect === 'function') {
-            ctx.beginPath();
-            ctx.roundRect(x, y, width, height, radii);
-            return;
-        }
-        // Polyfill
         ctx.beginPath();
-        if (!Array.isArray(radii)) radii = [radii, radii, radii, radii];
-        const [tl, tr, br, bl] = radii;
-        ctx.moveTo(x + tl, y);
-        ctx.lineTo(x + width - tr, y);
-        ctx.quadraticCurveTo(x + width, y, x + width, y + tr);
-        ctx.lineTo(x + width, y + height - br);
-        ctx.quadraticCurveTo(x + width, y + height, x + width - br, y + height);
-        ctx.lineTo(x + bl, y + height);
-        ctx.quadraticCurveTo(x, y + height, x, y + height - bl);
-        ctx.lineTo(x, y + tl);
-        ctx.quadraticCurveTo(x, y, x + tl, y);
-        ctx.closePath();
+        if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(x, y, width, height, radii);
+        } else {
+            ctx.rect(x, y, width, height); // Fallback
+        }
     }
 
     // --- Drawing ---
     function drawList(step, animState = null) {
+        if (!ctx) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         const centerX = canvas.width / 2;
@@ -685,7 +817,6 @@
             
             let color = COLORS.normal;
             if (node.type === 'sentinel') color = COLORS.sentinel;
-
             let opacity = 1.0;
 
             if (step) {
@@ -697,32 +828,29 @@
                     color = COLORS.active;
                     if (animState) opacity = animState.fadeOpacity;
                 }
+                if (step.type === 'floyd-collision' && i === step.targetIndex) color = COLORS.active;
             }
 
-            // Draw Links (Dual)
+            // Draw Links
             if (i < data.length - 1) {
-                // Determine if link should fade
                 let linkOpacity = 1.0;
                 if (step && step.type === 'fade-out' && (i === step.targetIndex || i + 1 === step.targetIndex)) {
                      if (animState) linkOpacity = animState.fadeOpacity;
                 }
-                
-                // Forward Link (Top)
-                drawCurve(
-                    x + NODE_WIDTH - POINTER_WIDTH/2, y - 5, 
-                    x + NODE_WIDTH + NODE_GAP + POINTER_WIDTH/2, y - 5, 
-                    -30, linkOpacity
-                );
-
-                // Backward Link (Bottom)
-                drawCurve(
-                    x + NODE_WIDTH + NODE_GAP + POINTER_WIDTH/2, y + 5,
-                    x + NODE_WIDTH - POINTER_WIDTH/2, y + 5,
-                    30, linkOpacity
-                );
+                drawCurve(x + NODE_WIDTH - POINTER_WIDTH/2, y - 5, x + NODE_WIDTH + NODE_GAP + POINTER_WIDTH/2, y - 5, -20, linkOpacity);
+                drawCurve(x + NODE_WIDTH + NODE_GAP + POINTER_WIDTH/2, y + 5, x + NODE_WIDTH - POINTER_WIDTH/2, y + 5, 20, linkOpacity);
+            } 
+            else if (i === data.length - 1 && cycleTargetIndex !== -1) {
+                const targetX = startX + cycleTargetIndex * (NODE_WIDTH + NODE_GAP);
+                drawCycleLink(x + NODE_WIDTH/2, y + NODE_HEIGHT/2, targetX + NODE_WIDTH/2, y + NODE_HEIGHT/2);
             }
 
             drawNode3Part(x, y - NODE_HEIGHT/2, node, color, opacity);
+            
+            if (step && (step.type === 'floyd-step' || step.type === 'floyd-collision')) {
+                if (i === step.tortoise) drawIcon(x + NODE_WIDTH/2 - 20, y - NODE_HEIGHT - 25, '🐢');
+                if (i === step.hare) drawIcon(x + NODE_WIDTH/2 + 20, y - NODE_HEIGHT - 25, '🐇');
+            }
         });
 
         ctx.restore();
@@ -731,7 +859,6 @@
     function drawNode3Part(x, y, node, color, opacity) {
         ctx.save();
         ctx.globalAlpha = opacity;
-        
         const bodyWidth = NODE_WIDTH - (2 * POINTER_WIDTH);
         
         ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
@@ -740,115 +867,88 @@
         
         if (color !== COLORS.normal && color !== COLORS.sentinel) {
             ctx.shadowColor = color;
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = 15;
         }
 
-        // 1. Prev Pointer (Left)
-        drawRoundRectPath(ctx, x, y, POINTER_WIDTH, NODE_HEIGHT, [8, 0, 0, 8]);
-        ctx.fillStyle = (node.type === 'sentinel') ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.1)';
-        ctx.fill();
-        ctx.stroke();
+        drawRoundRectPath(ctx, x, y, POINTER_WIDTH, NODE_HEIGHT, [8,0,0,8]); // Prev
+        ctx.fillStyle = (node.type==='sentinel') ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.1)'; ctx.fill(); ctx.stroke();
         
-        // Prev Dot
-        if (node.id !== 'H') { // No prev on Header
-            ctx.beginPath();
-            ctx.arc(x + POINTER_WIDTH/2, y + NODE_HEIGHT/2, 3, 0, Math.PI*2);
-            ctx.fillStyle = '#ccc';
-            ctx.fill();
-        }
+        drawRoundRectPath(ctx, x+POINTER_WIDTH, y, bodyWidth, NODE_HEIGHT, 0); // Val
+        ctx.fillStyle = (node.type==='sentinel') ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.05)'; ctx.fill(); ctx.stroke();
+        
+        drawRoundRectPath(ctx, x+POINTER_WIDTH+bodyWidth, y, POINTER_WIDTH, NODE_HEIGHT, [0,8,8,0]); // Next
+        ctx.fillStyle = (node.type==='sentinel') ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.1)'; ctx.fill(); ctx.stroke();
 
-        // 2. Value Body (Center)
-        drawRoundRectPath(ctx, x + POINTER_WIDTH, y, bodyWidth, NODE_HEIGHT, 0);
-        ctx.fillStyle = (node.type === 'sentinel') ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.05)';
-        ctx.fill();
-        ctx.stroke();
+        if (node.id !== 'H') { ctx.beginPath(); ctx.arc(x+POINTER_WIDTH/2, y+NODE_HEIGHT/2, 2, 0, 6.28); ctx.fillStyle='#ccc'; ctx.fill(); }
+        if (node.id !== 'T') { ctx.beginPath(); ctx.arc(x+NODE_WIDTH-POINTER_WIDTH/2, y+NODE_HEIGHT/2, 2, 0, 6.28); ctx.fillStyle='#ccc'; ctx.fill(); }
 
-        // 3. Next Pointer (Right)
-        drawRoundRectPath(ctx, x + POINTER_WIDTH + bodyWidth, y, POINTER_WIDTH, NODE_HEIGHT, [0, 8, 8, 0]);
-        ctx.fillStyle = (node.type === 'sentinel') ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.1)';
-        ctx.fill();
-        ctx.stroke();
-
-        // Next Dot
-        if (node.id !== 'T') { // No next on Trailer
-            ctx.beginPath();
-            ctx.arc(x + NODE_WIDTH - POINTER_WIDTH/2, y + NODE_HEIGHT/2, 3, 0, Math.PI*2);
-            ctx.fillStyle = '#ccc';
-            ctx.fill();
-        }
-
-        // Text
         ctx.shadowBlur = 0;
         ctx.fillStyle = '#fff';
-        ctx.font = (node.type === 'sentinel') ? 'bold 16px Inter' : 'bold 20px Inter';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        ctx.font = (node.type==='sentinel') ? 'bold 14px Inter' : 'bold 16px Inter';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(node.val, x + NODE_WIDTH/2, y + NODE_HEIGHT/2);
-
         ctx.restore();
     }
 
-    function drawCurve(x1, y1, x2, y2, controlY, opacity) {
+    function drawCurve(x1, y1, x2, y2, cy, opacity) {
         ctx.save();
         ctx.globalAlpha = opacity;
         ctx.strokeStyle = 'rgba(255,255,255,0.8)';
         ctx.lineWidth = 1.5;
-        
         ctx.beginPath();
         ctx.moveTo(x1, y1);
-        const midX = (x1 + x2) / 2;
-        const midY = (y1 + y2) / 2 + controlY;
-        ctx.quadraticCurveTo(midX, midY, x2, y2);
+        ctx.quadraticCurveTo((x1+x2)/2, (y1+y2)/2 + cy, x2, y2);
         ctx.stroke();
-
-        // Arrowhead
-        // Calc angle at end
-        // Simple approximation for quadratic bezier derivative at t=1
-        const dx = x2 - midX;
-        const dy = y2 - midY;
-        const angle = Math.atan2(dy, dx);
         
-        const headLen = 8;
+        const angle = Math.atan2(y2 - ((y1+y2)/2 + cy), x2 - ((x1+x2)/2)); 
         ctx.beginPath();
         ctx.moveTo(x2, y2);
-        ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI/6), y2 - headLen * Math.sin(angle - Math.PI/6));
-        ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI/6), y2 - headLen * Math.sin(angle + Math.PI/6));
-        ctx.fillStyle = '#fff';
-        ctx.fill();
-
+        ctx.lineTo(x2 - 6 * Math.cos(angle - 0.5), y2 - 6 * Math.sin(angle - 0.5));
+        ctx.lineTo(x2 - 6 * Math.cos(angle + 0.5), y2 - 6 * Math.sin(angle + 0.5));
+        ctx.fillStyle = '#fff'; ctx.fill();
         ctx.restore();
     }
 
+    function drawCycleLink(x1, y1, x2, y2) {
+        ctx.save();
+        ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1 + 25);
+        const deepY = y1 + 120;
+        ctx.bezierCurveTo(x1, deepY, x2, deepY, x2, y2 + 25);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#ff4444'; ctx.beginPath(); ctx.arc(x2, y2 + 25, 4, 0, 6.28); ctx.fill();
+        ctx.restore();
+    }
+
+    function drawIcon(x, y, icon) {
+        ctx.font = '24px Arial'; ctx.textAlign = 'center'; ctx.fillText(icon, x, y);
+    }
+
+    // --- Helpers ---
     function drawArray(step) {
         const div = document.getElementById('arrayVisual');
         div.innerHTML = '';
         const data = step ? step.listSnapshot : list;
-        
-        // Only show data nodes in array visual, skipping Header/Trailer
         const dataNodes = data.filter(n => n.type === 'data');
+        if (dataNodes.length === 0) { div.innerHTML = '<span style="color:var(--text-muted); font-size:14px;">(Empty)</span>'; return; }
         
-        if (dataNodes.length === 0) {
-            div.innerHTML = '<span style="color:var(--text-muted); font-size:14px; margin-top:20px;">(Empty)</span>';
-            return;
-        }
-
         dataNodes.forEach((node, i) => {
             const cell = document.createElement('div');
             cell.className = 'array-cell';
             cell.innerHTML = `${node.val}<span class="idx">${i}</span>`;
-            
-            // Check original index in full list for highlighting
-            const realIndex = data.indexOf(node);
-            
-            if (step) {
-                if (step.type === 'traverse' && realIndex === step.targetIndex) cell.classList.add('active'); // Reuse active for simpler styling
-                if (step.type === 'highlight' && realIndex === step.targetIndex) cell.classList.add('active');
+            const realIdx = data.indexOf(node);
+            if (step && step.type.startsWith('floyd')) {
+                if (realIdx === step.tortoise) cell.classList.add('tortoise');
+                if (realIdx === step.hare) cell.classList.add('hare');
+            } else if (step) {
+                if (step.type === 'highlight' && realIdx === step.targetIndex) cell.classList.add('active');
             }
             div.appendChild(cell);
         });
     }
 
-    // --- Helpers ---
     function getVal() {
         const el = document.getElementById('valInput');
         if (!el || el.value === '') { el.focus(); return null; }
@@ -862,35 +962,24 @@
         if (!el || el.value === '') return null;
         const v = parseInt(el.value);
         if (isNaN(v)) return null;
-        el.value = '';
-        return v;
+        el.value = ''; return v;
     }
     function handleEnter(e) { if(e.key === 'Enter') handleAddLast(); }
-    
     function disableControls(dis) {
-        document.querySelectorAll('button:not(.zoom-btn)').forEach(b => b.disabled = dis);
-        document.querySelectorAll('input').forEach(i => i.disabled = dis);
+        document.querySelectorAll('button:not(.zoom-btn):not(#cyclesBtn):not(.cycles-dropdown button)').forEach(b => b.disabled = dis);
+        document.querySelectorAll('input:not(#cycleIdxInput)').forEach(i => i.disabled = dis);
     }
     function showStatus(msg) {
         const el = document.getElementById('statusMessage');
-        el.textContent = msg;
-        el.classList.add('show');
+        el.textContent = msg; el.classList.add('show');
         if (!isAnimating) setTimeout(() => el.classList.remove('show'), 2000);
     }
 
-    // Camera
     function zoomIn() { scale = Math.min(scale * 1.2, 2); drawList(null); }
     function zoomOut() { scale = Math.max(scale / 1.2, 0.5); drawList(null); }
     function resetView() { offsetX = 0; offsetY = 0; scale = 1; drawList(null); }
 
-    // Init
     initList();
-    setTimeout(() => {
-        resizeCanvas();
-        drawList(null);
-        showStatus("Ready");
-    }, 100);
-
 </script>
 </body>
 </html>
