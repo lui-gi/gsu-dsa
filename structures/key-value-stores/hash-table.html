@@ -306,7 +306,7 @@
                 </div>
 
                 <div class="control-group">
-                    <input type="number" id="keyInput" placeholder="Key (Int)" onkeypress="handleEnter(event)">
+                    <input type="text" id="keyInput" placeholder="Key (Int/String)" style="width:110px;" onkeypress="handleEnter(event)">
                     <input type="text" id="valInput" placeholder="Value" style="width:80px;" onkeypress="handleEnter(event)">
                     <button class="primary" onclick="handleInsert()">Insert</button>
                 </div>
@@ -331,7 +331,7 @@
                 <div class="legend">
                     <div class="legend-item"><div class="dot" style="color: rgba(255,255,255,0.1); border:1px solid #fff; background: currentColor;"></div>Empty</div>
                     <div class="legend-item"><div class="dot" style="color: var(--slot-occupied); background: currentColor;"></div>Occupied</div>
-                    <div class="legend-item"><div class="dot" style="color: var(--slot-deleted); background: currentColor;"></div>Deleted (Tombstone)</div>
+                    <div class="legend-item"><div class="dot" style="color: var(--slot-deleted); background: currentColor;"></div>Deleted</div>
                     <div class="legend-item"><div class="dot" style="color: var(--slot-active); background: currentColor;"></div>Probing</div>
                 </div>
                 
@@ -406,9 +406,48 @@
 
     // --- Logic ---
 
-    // Hash Functions (Integers as per slides)
-    function h1(key) { return key % TABLE_SIZE; }
-    function h2(key) { return DOUBLE_HASH_PRIME - (key % DOUBLE_HASH_PRIME); }
+    // Polynomial Hash Code for Strings
+    // Formula: (x₀a⁰ + x₁a¹ + ... + x_{n-1}a^{n-1}) % m
+    // where x_i are character codes, a is a constant (31 or 33), m is a large prime
+    const HASH_CONSTANT = 31; // Common choice for polynomial hashing
+    const LARGE_PRIME = 1000000007; // Large prime to avoid overflow
+
+    function polynomialHashCode(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const charCode = str.charCodeAt(i); // x_i
+            const power = Math.pow(HASH_CONSTANT, i); // a^i
+            hash = (hash + charCode * power) % LARGE_PRIME;
+        }
+        return hash;
+    }
+
+    // Convert key to integer (handles both strings and integers)
+    function keyToInt(key) {
+        if (typeof key === 'number') {
+            return key;
+        } else if (typeof key === 'string') {
+            // Check if it's a numeric string
+            const num = parseInt(key);
+            if (!isNaN(num) && num.toString() === key) {
+                return num;
+            }
+            // Use polynomial hash code for string
+            return polynomialHashCode(key);
+        }
+        return 0;
+    }
+
+    // Hash Functions (now works with both integers and strings)
+    function h1(key) {
+        const intKey = keyToInt(key);
+        return intKey % TABLE_SIZE;
+    }
+
+    function h2(key) {
+        const intKey = keyToInt(key);
+        return DOUBLE_HASH_PRIME - (intKey % DOUBLE_HASH_PRIME);
+    }
 
     function getNextIndex(key, i) {
         let base = h1(key);
@@ -676,7 +715,15 @@
         if (slot.status === 'occupied') {
             ctx.fillStyle = '#fff';
             ctx.font = 'bold 16px Inter';
-            ctx.fillText(slot.key, x + SLOT_WIDTH/2, y + SLOT_HEIGHT/2 - 8);
+
+            // Truncate long keys for display
+            let displayKey = String(slot.key);
+            if (displayKey.length > 8) {
+                displayKey = displayKey.substring(0, 7) + '...';
+                ctx.font = 'bold 13px Inter'; // Smaller font for long keys
+            }
+
+            ctx.fillText(displayKey, x + SLOT_WIDTH/2, y + SLOT_HEIGHT/2 - 8);
             ctx.font = '12px Inter';
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
             ctx.fillText(slot.val, x + SLOT_WIDTH/2, y + SLOT_HEIGHT/2 + 12);
@@ -695,9 +742,17 @@
     function getKey() {
         const el = document.getElementById('keyInput');
         if(!el || el.value === '') { el?.focus(); return null; }
-        const val = parseInt(el.value);
-        if(isNaN(val)) { showStatus("Key must be Integer (for simple hashing)"); return null; }
-        return val;
+
+        const input = el.value.trim();
+
+        // Try to parse as integer
+        const num = parseInt(input);
+        if (!isNaN(num) && num.toString() === input) {
+            return num; // Return as integer
+        }
+
+        // Otherwise, treat as string
+        return input; // Return as string
     }
     
     function getVal() {
