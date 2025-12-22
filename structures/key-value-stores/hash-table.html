@@ -446,7 +446,7 @@
 
         <div class="trace-log-container" id="logContainer">
             <div class="trace-toggle-btn" onclick="toggleLog()">
-                <i class="fa-solid fa-terminal"></i> Trace Log <i class="fa-solid fa-chevron-up" id="logToggleIcon"></i>
+                <i class="fa-solid fa-terminal"></i> Explanation <i class="fa-solid fa-chevron-up" id="logToggleIcon"></i>
             </div>
             <div class="trace-header">
                 <span>Operation Log</span>
@@ -579,13 +579,6 @@
         container.scrollTop = container.scrollHeight;
     }
 
-    function autoOpenLog() {
-        const container = document.getElementById('logContainer');
-        if (!container.classList.contains('open')) {
-            toggleLog();
-        }
-    }
-
     // --- Main Operations ---
 
     function handleInsert() {
@@ -594,7 +587,7 @@
         if (k === null || v === null) return;
 
         clearLog();
-        autoOpenLog(); // Auto-open to show trace
+        // REMOVED autoOpenLog();
         addLog(`<strong>Insert Operation:</strong> Key <span class="log-hl">${k}</span>, Value <span class="log-hl">${v}</span>`);
 
         const hashObj = h1(k);
@@ -690,7 +683,7 @@
         if (k === null) return;
 
         clearLog();
-        autoOpenLog();
+        // REMOVED autoOpenLog();
         addLog(`<strong>Search Operation:</strong> Key <span class="log-hl">${k}</span>`);
 
         const hashObj = h1(k);
@@ -753,7 +746,7 @@
         if (k === null) return;
 
         clearLog();
-        autoOpenLog();
+        // REMOVED autoOpenLog();
         addLog(`<strong>Delete Operation:</strong> Key <span class="log-hl">${k}</span>`);
         
         const hashObj = h1(k);
