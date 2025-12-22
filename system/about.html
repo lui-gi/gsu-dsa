@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - GSU DSA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Palette */
+            --gsu-blue: #0039A6;
+            --gsu-blue-light: #4d8dff;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.15);
+            --glass-bg: rgba(15, 23, 42, 0.6);
+            --glass-header: rgba(30, 41, 59, 0.7);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000c24;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 60px 20px 40px; 
+            overflow-x: hidden;
+        }
+
+        /* --- BACKGROUND AURA --- */
+        .aura-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .aura-blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+        .blob-1 { background: var(--gsu-blue); width: 700px; height: 700px; top: -10%; left: -10%; animation-duration: 25s; }
+        .blob-2 { background: #0055CC; width: 600px; height: 600px; bottom: -10%; right: -20%; animation-delay: -5s; animation-duration: 30s; }
+        .blob-3 { background: #001F5C; width: 800px; height: 800px; bottom: -20%; left: 20%; opacity: 0.8; animation-delay: -10s; }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 50px) scale(1.1); }
+            100% { transform: translate(-30px, -20px) scale(0.9); }
+        }
+
+        /* --- MAIN LAYOUT --- */
+        .container {
+            max-width: 950px; 
+            width: 100%;
+            animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- REPO HEADER --- */
+        .repo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .repo-title {
+            font-size: 20px;
+            color: var(--gsu-blue-light);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .repo-title span { font-weight: 600; }
+        .badge {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+        }
+
+        .actions { display: flex; gap: 8px; }
+
+        /* --- GRID CONTENT --- */
+        .repo-grid {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 32px;
+        }
+
+        /* README CONTAINER */
+        .readme-container {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .readme-header {
+            background: rgba(255,255,255,0.05);
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .readme-body {
+            padding: 32px;
+            background: rgba(0,0,0,0.2);
+        }
+        
+        /* Markdown Styles */
+        .md-h1 { font-size: 28px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px; font-weight: 600; }
+        .md-h2 { font-size: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 32px; margin-bottom: 16px; font-weight: 600; }
+        .md-h3 { font-size: 18px; margin-top: 24px; margin-bottom: 12px; font-weight: 600; }
+        .md-p { font-size: 15px; line-height: 1.6; color: #cbd5e1; margin-bottom: 16px; }
+        .md-list { margin-left: 24px; margin-bottom: 16px; color: #cbd5e1; }
+        .md-list li { margin-bottom: 6px; }
+        .md-code { font-family: 'Consolas', monospace; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+        .md-link { color: var(--gsu-blue-light); text-decoration: none; }
+        .md-link:hover { text-decoration: underline; }
+
+        /* SIDEBAR */
+        .sidebar h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+        .sidebar-text { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5; }
+        
+        /* Credits Section Styling */
+        .credits-box {
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .credit-item {
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .credit-item strong {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        /* Sidebar Button */
+        .btn-repo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-top: 12px;
+            font-weight: 500;
+        }
+        .btn-repo:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--text-muted);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 900px) {
+            .repo-grid { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="aura-container">
+        <div class="aura-blob blob-1"></div>
+        <div class="aura-blob blob-2"></div>
+        <div class="aura-blob blob-3"></div>
+    </div>
+
+    <div class="container">
+        <div class="glass-card">
+            
+            <div class="repo-header">
+                <div class="repo-title">
+                    <svg height="16" viewBox="0 0 16 16" width="16" fill="currentColor" style="color: var(--text-muted);">
+                        <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 0 1 1-1h8ZM5 12.25v3.25a.25.25 0 0 0 .4.2l1.45-1.087a.249.249 0 0 1 .3 0L8.6 15.7a.25.25 0 0 0 .4-.2v-3.25a.25.25 0 0 0-.25-.25h-3.5a.25.25 0 0 0-.25.25Z"></path>
+                    </svg>
+                    <a href="#" style="color: var(--gsu-blue-light); text-decoration: none;">lui-gi</a>
+                    <span style="color: var(--text-muted);">/</span>
+                    <a href="#" style="color: var(--gsu-blue-light); text-decoration: none; font-weight:bold;">gsu-dsa</a>
+                    <span class="badge">Public</span>
+                </div>
+                <div class="actions"></div>
+            </div>
+
+            <div class="repo-grid">
+                
+                <div class="main-content">
+                    
+                    <div class="readme-container">
+                        <div class="readme-header">
+                            <svg class="icon-file" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="margin-right:8px;"><path d="M6 0a2 2 0 0 0-2 2v1h8V2a2 2 0 0 0-2-2H6zm2 1h2a1 1 0 0 1 1 1v1H5V2a1 1 0 0 1 1-1h2zM2 4v11a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V4H2zm2 2h8v1H4V6zm0 2h8v1H4V8zm0 2h6v1H4v-1z"/></svg>
+                            README.md
+                        </div>
+                        <div class="readme-body">
+                            <div class="md-h1">GSU DSA</div>
+                            <p class="md-p">
+                                <strong>GSU DSA</strong> is a static educational website designed specifically to support <strong>Georgia State University</strong> students taking CS 2720 / Data Structures. I'm a former student of <strong>Dr. Islam</strong>, and thus this project aims to provide a clear and interactive supplement to his CS 2720 curriculum.
+                            </p>
+                            
+                            <div class="md-h2">Overview</div>
+                            <p class="md-p">
+                                Data structures are one of the most important concepts of computer science, especially in technical interviews, yet they can be difficult to grasp through the code implementation alone. As a previous student who has taken Dr. Islam's course, I built this tool to help current GSU Data Structures students visualize each concept because I also faced difficulty trying to imagine how these structures looked beyond their Python implementation.
+                            </p>
+                            <p class="md-p">
+                                This project offers visualizations for the standard structures and algorithms covered in class, providing real-time feedback for operations like insertion, deletion, and traversal to reinforce understanding before exams. I also took inspiration from old PlayStation homescreens for the navigation for some nostalgic eye candy.
+                            </p>
+
+                            <div class="md-h2">Current Structures</div>
+                            <p class="md-p">The application currently supports visualizations for the following data structures:</p>
+
+                            <div class="md-h3">Linear Structures</div>
+                            <ul class="md-list">
+                                <li><strong>Stack:</strong> Visualize LIFO (Last-In, First-Out) operations (<span class="md-code">push</span>, <span class="md-code">pop</span>).</li>
+                                <li><strong>Queue:</strong> Visualize FIFO (First-In, First-Out) operations (<span class="md-code">enqueue</span>, <span class="md-code">dequeue</span>).</li>
+                                <li><strong>Linked Lists:</strong>
+                                    <ul>
+                                        <li>Singly Linked List</li>
+                                        <li>Doubly Linked List</li>
+                                    </ul>
+                                </li>
+                            </ul>
+
+                            <div class="md-h3">Key-Value Stores</div>
+                            <ul class="md-list">
+                                <li><strong>Dictionary:</strong> Key-value mapping visualizations.</li>
+                                <li><strong>Hash Table:</strong> Demonstrate collision resolution and hashing functions.</li>
+                            </ul>
+
+                            <div class="md-h3">Trees</div>
+                            <ul class="md-list">
+                                <li><strong>Binary Tree:</strong> Standard binary tree traversal and structure.</li>
+                                <li><strong>Heaps:</strong> Max-Heap and Min-Heap operations (heapify, extract).</li>
+                                <li><strong>AVL Tree:</strong> Self-balancing binary search tree rotations.</li>
+                                <li><strong>Trie:</strong> String storage and retrieval optimization.</li>
+                            </ul>
+
+                            <div class="md-h3">Graphs & Algorithms</div>
+                            <ul class="md-list">
+                                <li><strong>Graph Traversals:</strong> Visual representations of nodes and edges.</li>
+                                <li><strong>Topological Sort:</strong> Directed Acyclic Graph (DAG) ordering.</li>
+                                <li><strong>Dijkstra's Algorithm:</strong> Shortest path visualization.</li>
+                            </ul>
+
+                            <div class="md-h2">📄 License</div>
+                            <p class="md-p">
+                                This project is open-source and available under the <a href="https://github.com/lui-gi/gsu-dsa/blob/main/LICENSE" target="_blank" class="md-link">MIT License</a>.
+                            </p>
+                            
+                            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 32px 0;">
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="sidebar">
+                    <div class="sidebar-section">
+                        <h3>About</h3>
+                        <div class="credits-box">
+                            <div class="credit-item">
+                                <strong>Credits:</strong> Luigi Fernandez
+                            </div>
+                            <div class="credit-item">
+                                <strong>Prev. Professor:</strong> Dr. Islam
+                            </div>
+                        </div>
+                        <p class="sidebar-text">
+                            This project is open source. Pull requests are welcome to help improve the tool for future semesters.
+                        </p>
+                        <a href="https://github.com/lui-gi/gsu-dsa" target="_blank" class="btn-repo">
+                            <svg height="16" viewBox="0 0 16 16" width="16" fill="currentColor" style="margin-right: 6px;"><path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 0 1 1-1h8ZM5 12.25v3.25a.25.25 0 0 0 .4.2l1.45-1.087a.249.249 0 0 1 .3 0L8.6 15.7a.25.25 0 0 0 .4-.2v-3.25a.25.25 0 0 0-.25-.25h-3.5a.25.25 0 0 0-.25.25Z"></path></svg>
+                            View Repository
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>

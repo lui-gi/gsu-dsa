@@ -1,7 +1,7 @@
 const menuData = [
     {
         name: "System",
-        items: ["About GSU DSA", "Credits (Dr. Islam)", "Source Code"]
+        items: ["About GSU DSA"]
     },
     {
         name: "Linear Structures",
@@ -23,6 +23,8 @@ const menuData = [
 
 // File path mapping for visualization HTML files
 const itemToPath = {
+    // System
+    "About GSU DSA": "system/about.html",
     // Linear Structures
     "Stack": "structures/linear-structures/stack.html",
     "Queue": "structures/linear-structures/queue.html",
@@ -56,9 +58,7 @@ const ITEM_HEIGHT = 80;
 
 function init() {
     render();
-    // updateClock();  // Removed - no longer using dynamic clock
     updatePos();
-    // setInterval(updateClock, 60000);  // Removed - no longer using dynamic clock
 }
 
 function render() {
@@ -152,11 +152,6 @@ function updateVertical(cIdx) {
     col.style.transform = `translateY(${scrollY}px)`;
 }
 
-// function updateClock() {
-//     const now = new Date();
-//     const str = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-//     document.getElementById('clock').innerText = str;
-// }
 
 // Iframe load and close functions
 function loadInIframe(itemName) {
