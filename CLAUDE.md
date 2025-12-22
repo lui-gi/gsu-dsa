@@ -133,5 +133,24 @@ box-shadow: 0 8px 32px rgba(0, 57, 166, 0.08);
 
 ## To-Dos:
 
-- **Implement functionality for the structures**: Use heap.html as a UI template/baseline, then incorporate the other structures by folder.
+-**Update hash.html**: I want to add a log that describes all the math and logic behind each insertion, search, or deletion. The format should be something like:
+(If user inserts)
+Inserting key (key) with value (value).
+Key hashed to (hash code).
+
+(If collision with linear probing) 
+Collission occurred. Strategy: Linear
+Probing...
+Next available index is (index). 
+
+Collission occurred. 
+Probing
+Available index found!
+
+Successfully inserted key (key) with value (value) at index (index).
+
+The log can be viewed via a button at the bottom-center of the visual container. It says "Trace Log" and has an up icon indicating that the log will slide up to view, then a down arrow to hide it again.
+
+-**Separate CSS, js from structures**: Similar to how the index page is separated into .html, .css, and .js, I want to separate each structure like that and have their respective files live in the correct folders. 
+
 

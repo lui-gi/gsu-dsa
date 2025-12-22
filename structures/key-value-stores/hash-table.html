@@ -76,6 +76,7 @@
             flex-direction: column;
             overflow: hidden;
             box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5);
+            position: relative; /* For absolute positioning of log */
         }
 
         /* --- HEADER & CONTROLS --- */
@@ -192,6 +193,8 @@
             background: rgba(0,0,0,0.2);
             overflow: hidden;
             cursor: grab;
+            /* Ensure it sits behind the log container */
+            z-index: 1; 
         }
         #canvas-wrapper:active { cursor: grabbing; }
 
@@ -279,6 +282,98 @@
         }
         .zoom-btn:hover { background: rgba(255,255,255,0.1); }
 
+        /* --- TRACE LOG --- */
+        .trace-log-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 320px; /* Expanded height */
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            border-radius: 0 0 24px 24px;
+            transform: translateY(100%); /* Hidden state */
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -20px 40px rgba(0,0,0,0.3);
+        }
+
+        .trace-log-container.open {
+            transform: translateY(0);
+        }
+
+        .trace-toggle-btn {
+            position: absolute;
+            top: -36px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gsu-blue);
+            color: white;
+            border: 1px solid var(--glass-border);
+            border-bottom: none;
+            padding: 8px 20px;
+            border-radius: 12px 12px 0 0;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+        .trace-toggle-btn:hover {
+            background: #004BC9;
+            padding-bottom: 10px; /* Little pop up effect */
+            top: -38px;
+        }
+
+        .trace-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .trace-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            color: #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            line-height: 1.5;
+        }
+
+        /* Scrollbar for Log */
+        .trace-content::-webkit-scrollbar { width: 8px; }
+        .trace-content::-webkit-scrollbar-track { background: transparent; }
+        .trace-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        .log-entry {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .log-hl { color: var(--gsu-blue-light); font-weight: bold; }
+        .log-warn { color: #ffc107; }
+        .log-err { color: #ff6b6b; }
+        .log-success { color: #28a745; }
+        .log-math { color: #a5b4fc; font-style: italic; }
+
     </style>
 </head>
 <body>
@@ -348,6 +443,19 @@
                 <button class="zoom-btn" onclick="resetView()"><i class="fa-solid fa-rotate-right"></i></button>
             </div>
         </div>
+
+        <div class="trace-log-container" id="logContainer">
+            <div class="trace-toggle-btn" onclick="toggleLog()">
+                <i class="fa-solid fa-terminal"></i> Trace Log <i class="fa-solid fa-chevron-up" id="logToggleIcon"></i>
+            </div>
+            <div class="trace-header">
+                <span>Operation Log</span>
+                <span style="font-size: 11px; opacity: 0.6;">MATH & LOGIC TRACE</span>
+            </div>
+            <div class="trace-content" id="logContent">
+                <div class="log-entry" style="opacity: 0.5;">Waiting for operations...</div>
+            </div>
+        </div>
     </div>
 
 <script>
@@ -359,7 +467,8 @@
         active: '#ffc107',
         success: '#28a745',
         text: '#ffffff',
-        border: 'rgba(255, 255, 255, 0.3)'
+        border: 'rgba(255, 255, 255, 0.3)',
+        error: '#ff6b6b'
     };
 
     const canvas = document.getElementById('hashCanvas');
@@ -404,132 +513,171 @@
     canvas.addEventListener('mouseleave', () => { isDragging = false; canvas.style.cursor = 'grab'; });
     canvas.addEventListener('wheel', e => { e.preventDefault(); const s = e.deltaY < 0 ? 1.1 : 0.9; scale = Math.min(Math.max(scale * s, 0.5), 2); if(!isAnimating) drawTable(null); });
 
-    // --- Logic ---
+    // --- Logic & Math ---
 
-    // Polynomial Hash Code for Strings
-    // Formula: (x₀a⁰ + x₁a¹ + ... + x_{n-1}a^{n-1}) % m
-    // where x_i are character codes, a is a constant (31 or 33), m is a large prime
-    const HASH_CONSTANT = 31; // Common choice for polynomial hashing
-    const LARGE_PRIME = 1000000007; // Large prime to avoid overflow
+    const HASH_CONSTANT = 31;
+    const LARGE_PRIME = 1000000007;
 
     function polynomialHashCode(str) {
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
-            const charCode = str.charCodeAt(i); // x_i
-            const power = Math.pow(HASH_CONSTANT, i); // a^i
+            const charCode = str.charCodeAt(i);
+            const power = Math.pow(HASH_CONSTANT, i);
             hash = (hash + charCode * power) % LARGE_PRIME;
         }
         return hash;
     }
 
-    // Convert key to integer (handles both strings and integers)
     function keyToInt(key) {
         if (typeof key === 'number') {
             return key;
         } else if (typeof key === 'string') {
-            // Check if it's a numeric string
             const num = parseInt(key);
-            if (!isNaN(num) && num.toString() === key) {
-                return num;
-            }
-            // Use polynomial hash code for string
+            if (!isNaN(num) && num.toString() === key) return num;
             return polynomialHashCode(key);
         }
         return 0;
     }
 
-    // Hash Functions (now works with both integers and strings)
     function h1(key) {
         const intKey = keyToInt(key);
-        return intKey % TABLE_SIZE;
+        const hash = intKey % TABLE_SIZE;
+        return { val: hash, intKey: intKey };
     }
 
     function h2(key) {
         const intKey = keyToInt(key);
-        return DOUBLE_HASH_PRIME - (intKey % DOUBLE_HASH_PRIME);
+        const hash = DOUBLE_HASH_PRIME - (intKey % DOUBLE_HASH_PRIME);
+        return hash;
     }
 
-    function getNextIndex(key, i) {
-        let base = h1(key);
-        if (strategy === 'linear') {
-            return (base + i) % TABLE_SIZE;
-        } else if (strategy === 'quadratic') {
-            return (base + i * i) % TABLE_SIZE;
-        } else if (strategy === 'double') {
-            let step = h2(key);
-            return (base + i * step) % TABLE_SIZE;
+    // --- Log Functions ---
+    function toggleLog() {
+        const container = document.getElementById('logContainer');
+        const icon = document.getElementById('logToggleIcon');
+        container.classList.toggle('open');
+        
+        if (container.classList.contains('open')) {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        } else {
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
         }
-        return base;
     }
+
+    function clearLog() {
+        document.getElementById('logContent').innerHTML = '';
+    }
+
+    function addLog(html) {
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        div.innerHTML = html;
+        const container = document.getElementById('logContent');
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function autoOpenLog() {
+        const container = document.getElementById('logContainer');
+        if (!container.classList.contains('open')) {
+            toggleLog();
+        }
+    }
+
+    // --- Main Operations ---
 
     function handleInsert() {
         const k = getKey();
         const v = getVal();
         if (k === null || v === null) return;
 
+        clearLog();
+        autoOpenLog(); // Auto-open to show trace
+        addLog(`<strong>Insert Operation:</strong> Key <span class="log-hl">${k}</span>, Value <span class="log-hl">${v}</span>`);
+
+        const hashObj = h1(k);
+        const baseHash = hashObj.val;
+        addLog(`1. Hashing Key: <span class="log-math">h1(${k}) = ${hashObj.intKey} % 13 = ${baseHash}</span>`);
+
         animationQueue = [];
         let i = 0;
-        let visited = new Set(); // Prevent infinite loops visually
+        let visited = new Set();
+        let inserted = false;
 
-        // Start Probing
         while (i < TABLE_SIZE) {
-            const idx = getNextIndex(k, i);
-            
-            // Check for loop (table full or cycle)
+            let idx = 0;
+            let mathLog = "";
+
+            if (strategy === 'linear') {
+                idx = (baseHash + i) % TABLE_SIZE;
+                mathLog = `(${baseHash} + ${i}) % 13 = ${idx}`;
+            } else if (strategy === 'quadratic') {
+                idx = (baseHash + i * i) % TABLE_SIZE;
+                mathLog = `(${baseHash} + ${i}²) % 13 = ${idx}`;
+            } else if (strategy === 'double') {
+                const step = h2(k);
+                if (i === 0) addLog(`&nbsp;&nbsp;&nbsp;Calculated h2(${k}) = 11 - (${hashObj.intKey} % 11) = ${step}`);
+                idx = (baseHash + i * step) % TABLE_SIZE;
+                mathLog = `(${baseHash} + ${i} * ${step}) % 13 = ${idx}`;
+            }
+
+            // Loop check
             if (visited.has(idx)) {
+                addLog(`<span class="log-err">Error:</span> Cycle detected at index ${idx}. Table cannot accept this key.`);
                 animationQueue.push({ type: 'error', tableSnapshot: cloneTable(), msg: "Table Full / Cycle Detected!" });
                 break;
             }
             visited.add(idx);
 
-            // Visual Probe Step
+            addLog(`2.${i} Probing i=${i}: <span class="log-math">Index = ${mathLog}</span>`);
+            
             animationQueue.push({ 
-                type: 'probe', 
-                tableSnapshot: cloneTable(), 
-                targetIndex: idx, 
-                probeIndex: i, // which step of probe are we on (0, 1, 2...)
+                type: 'probe', tableSnapshot: cloneTable(), 
+                targetIndex: idx, probeIndex: i, 
                 msg: `Probing index ${idx} (i=${i})` 
             });
 
-            // Check Slot
             const slot = table[idx];
             if (slot.status === 'empty' || slot.status === 'deleted') {
-                // Found Spot
+                const statusStr = slot.status === 'empty' ? "Empty" : "Deleted (Tombstone)";
+                addLog(`&nbsp;&nbsp;&nbsp;-> Slot ${idx} is ${statusStr}. <span class="log-success">Insertion Possible.</span>`);
+                
                 const newTable = cloneTable();
                 newTable[idx] = { key: k, val: v, status: 'occupied' };
                 animationQueue.push({ 
-                    type: 'success', 
-                    tableSnapshot: newTable, 
-                    targetIndex: idx,
+                    type: 'success', tableSnapshot: newTable, targetIndex: idx,
                     msg: `Inserted Key ${k} at Index ${idx}` 
                 });
                 table[idx] = { key: k, val: v, status: 'occupied' };
+                addLog(`<span class="log-success">Success:</span> Inserted key '${k}' at index ${idx}.`);
+                inserted = true;
                 break;
             } else if (slot.status === 'occupied' && slot.key === k) {
-                // Update existing key
+                addLog(`&nbsp;&nbsp;&nbsp;-> Slot ${idx} contains key '${k}'. <span class="log-warn">Updating Value.</span>`);
                 const newTable = cloneTable();
                 newTable[idx] = { key: k, val: v, status: 'occupied' };
                 animationQueue.push({ 
-                    type: 'success', 
-                    tableSnapshot: newTable, 
-                    targetIndex: idx,
+                    type: 'success', tableSnapshot: newTable, targetIndex: idx,
                     msg: `Updated Key ${k} at Index ${idx}` 
                 });
                 table[idx] = { key: k, val: v, status: 'occupied' };
+                addLog(`<span class="log-success">Success:</span> Updated value for key '${k}'.`);
+                inserted = true;
                 break;
             } else {
-                // Collision
+                addLog(`&nbsp;&nbsp;&nbsp;-> Slot ${idx} occupied by '${slot.key}'. <span class="log-warn">Collision!</span>`);
                 animationQueue.push({ 
-                    type: 'collision', 
-                    tableSnapshot: cloneTable(), 
-                    targetIndex: idx,
+                    type: 'collision', tableSnapshot: cloneTable(), targetIndex: idx,
                     msg: `Collision at ${idx}!` 
                 });
             }
             i++;
         }
         
-        if (i === TABLE_SIZE) {
+        if (!inserted && i === TABLE_SIZE) {
+             addLog(`<span class="log-err">Error:</span> Table full or max probes reached.`);
              animationQueue.push({ type: 'error', tableSnapshot: cloneTable(), msg: "Table Full (Probed all slots)" });
         }
 
@@ -541,31 +689,59 @@
         const k = getKey();
         if (k === null) return;
 
+        clearLog();
+        autoOpenLog();
+        addLog(`<strong>Search Operation:</strong> Key <span class="log-hl">${k}</span>`);
+
+        const hashObj = h1(k);
+        const baseHash = hashObj.val;
+        addLog(`1. Hashing Key: <span class="log-math">h1(${k}) = ${baseHash}</span>`);
+
         animationQueue = [];
         let i = 0;
         let visited = new Set();
+        let found = false;
 
         while (i < TABLE_SIZE) {
-            const idx = getNextIndex(k, i);
+            let idx = 0;
+            let mathLog = "";
+
+            if (strategy === 'linear') {
+                idx = (baseHash + i) % TABLE_SIZE;
+                mathLog = `(${baseHash} + ${i}) % 13 = ${idx}`;
+            } else if (strategy === 'quadratic') {
+                idx = (baseHash + i * i) % TABLE_SIZE;
+                mathLog = `(${baseHash} + ${i}²) % 13 = ${idx}`;
+            } else if (strategy === 'double') {
+                const step = h2(k);
+                idx = (baseHash + i * step) % TABLE_SIZE;
+                mathLog = `(${baseHash} + ${i} * ${step}) % 13 = ${idx}`;
+            }
+
             if (visited.has(idx)) break;
             visited.add(idx);
 
+            addLog(`2.${i} Checking Index ${idx} <span class="log-math">(${mathLog})</span>`);
             animationQueue.push({ type: 'probe', tableSnapshot: cloneTable(), targetIndex: idx, probeIndex: i, msg: `Checking index ${idx}...` });
 
             const slot = table[idx];
             if (slot.status === 'empty') {
-                // Not found (hit empty)
+                addLog(`&nbsp;&nbsp;&nbsp;-> Slot ${idx} is Empty. <span class="log-err">Key Not Found.</span> Stop.`);
                 animationQueue.push({ type: 'error', tableSnapshot: cloneTable(), targetIndex: idx, msg: "Key not found (Hit Empty)" });
                 break;
             } else if (slot.status === 'occupied' && slot.key === k) {
-                // Found
+                addLog(`&nbsp;&nbsp;&nbsp;-> Slot ${idx} matches key '${k}'. <span class="log-success">Found!</span>`);
                 animationQueue.push({ type: 'success', tableSnapshot: cloneTable(), targetIndex: idx, msg: `Found Key ${k}: ${slot.val}` });
+                found = true;
                 break;
+            } else {
+                addLog(`&nbsp;&nbsp;&nbsp;-> Slot ${idx} contains '${slot.key}' or is Deleted. Continue.`);
             }
-            // If 'deleted' or non-matching occupied, continue probing
             i++;
         }
-        if (i === TABLE_SIZE || visited.size === TABLE_SIZE) {
+
+        if (!found && (i === TABLE_SIZE || visited.size === TABLE_SIZE)) {
+             addLog(`<span class="log-err">Result:</span> Key '${k}' not found in table.`);
              animationQueue.push({ type: 'error', tableSnapshot: cloneTable(), msg: "Key not found (Exhausted probe)" });
         }
         runAnimation();
@@ -576,31 +752,52 @@
         const k = getKey();
         if (k === null) return;
 
+        clearLog();
+        autoOpenLog();
+        addLog(`<strong>Delete Operation:</strong> Key <span class="log-hl">${k}</span>`);
+        
+        const hashObj = h1(k);
+        const baseHash = hashObj.val;
+
         animationQueue = [];
         let i = 0;
         let visited = new Set();
+        let deleted = false;
 
         while (i < TABLE_SIZE) {
-            const idx = getNextIndex(k, i);
+            let idx = 0;
+            if (strategy === 'linear') idx = (baseHash + i) % TABLE_SIZE;
+            else if (strategy === 'quadratic') idx = (baseHash + i * i) % TABLE_SIZE;
+            else if (strategy === 'double') { const step = h2(k); idx = (baseHash + i * step) % TABLE_SIZE; }
+
             if (visited.has(idx)) break;
             visited.add(idx);
 
+            addLog(`Checking Index ${idx}...`);
             animationQueue.push({ type: 'probe', tableSnapshot: cloneTable(), targetIndex: idx, probeIndex: i, msg: `Checking index ${idx}...` });
 
             const slot = table[idx];
             if (slot.status === 'empty') {
+                addLog(`-> Hit Empty. Key '${k}' not found. Cannot delete.`);
                 animationQueue.push({ type: 'error', tableSnapshot: cloneTable(), targetIndex: idx, msg: "Key not found" });
                 break;
             } else if (slot.status === 'occupied' && slot.key === k) {
-                // Found -> Delete (Mark Tombstone)
+                addLog(`-> Key '${k}' found at ${idx}. <span class="log-warn">Marking as Deleted (Tombstone).</span>`);
                 const newTable = cloneTable();
                 newTable[idx] = { key: null, val: null, status: 'deleted' };
-                animationQueue.push({ type: 'success', tableSnapshot: newTable, targetIndex: idx, msg: `Deleted Key ${k} (Marked Tombstone)` });
+                animationQueue.push({ type: 'success', tableSnapshot: newTable, targetIndex: idx, msg: `Deleted Key ${k}` });
                 table[idx] = { key: null, val: null, status: 'deleted' };
+                deleted = true;
                 break;
             }
             i++;
         }
+        
+        if(!deleted && !animationQueue.some(s => s.type === 'error')) {
+             addLog(`<span class="log-err">Result:</span> Key not found.`);
+             animationQueue.push({ type: 'error', tableSnapshot: cloneTable(), msg: "Key not found" });
+        }
+        
         runAnimation();
         clearInputs();
     }
@@ -624,7 +821,6 @@
             
             drawTable(step);
             
-            // Adjust speed based on step type
             let duration = 600;
             if(step.type === 'probe') duration = 500;
             if(step.type === 'collision') duration = 400;
@@ -647,13 +843,10 @@
         ctx.scale(scale, scale);
 
         const data = step ? step.tableSnapshot : table;
-        
-        // Calculate Dimensions
         const totalWidth = TABLE_SIZE * (SLOT_WIDTH + SLOT_GAP) - SLOT_GAP;
         const startX = -totalWidth / 2;
         const startY = -SLOT_HEIGHT / 2;
 
-        // Draw Slots
         for(let i=0; i<TABLE_SIZE; i++) {
             const x = startX + i * (SLOT_WIDTH + SLOT_GAP);
             const slot = data[i];
@@ -664,7 +857,6 @@
             if (slot.status === 'occupied') color = COLORS.occupied;
             if (slot.status === 'deleted') color = COLORS.deleted;
 
-            // Step Highlighting
             if (step && step.targetIndex === i) {
                 if (step.type === 'probe') color = COLORS.active;
                 if (step.type === 'collision') { color = COLORS.active; borderColor = COLORS.error; }
@@ -674,28 +866,10 @@
 
             drawSlot(ctx, x, startY, slot, i, color, borderColor);
         }
-
-        // Draw Probe Arcs (Jump Visualization)
-        if (step && step.type !== 'success' && step.type !== 'error' && step.probeIndex > 0) {
-            // Draw arc from previous probe index to current
-            // Re-calculate previous index
-            // Not stored directly, but we can assume 'linear' implies i-1, others imply specific logic
-            // Easier: Probe Step should probably contain 'prevIndex' if we want exact arcs
-            // For now, let's just draw an arc from the center of the table (logical source) or imply flow
-            
-            // Better visual: If we are at step i, we came from step i-1. 
-            // Let's recompute prev index just for visual
-            // This assumes key didn't change (it shouldn't during anim)
-            // But we don't have 'key' in step easily accessible without parsing message or storing it
-            // Let's just highlight the current slot clearly. 
-            // Advanced: If I wanted arcs, I'd need the Key to recompute the previous hop.
-        }
-
         ctx.restore();
     }
 
     function drawSlot(ctx, x, y, slot, idx, bgColor, borderColor) {
-        // Body
         ctx.fillStyle = bgColor;
         ctx.strokeStyle = borderColor;
         ctx.lineWidth = 2;
@@ -705,24 +879,19 @@
         ctx.fill();
         ctx.stroke();
 
-        // Index Label (Top)
         ctx.fillStyle = COLORS.text;
         ctx.font = '12px Inter';
         ctx.textAlign = 'center';
         ctx.fillText(idx, x + SLOT_WIDTH/2, y - 10);
 
-        // Content
         if (slot.status === 'occupied') {
             ctx.fillStyle = '#fff';
             ctx.font = 'bold 16px Inter';
-
-            // Truncate long keys for display
             let displayKey = String(slot.key);
             if (displayKey.length > 8) {
                 displayKey = displayKey.substring(0, 7) + '...';
-                ctx.font = 'bold 13px Inter'; // Smaller font for long keys
+                ctx.font = 'bold 13px Inter';
             }
-
             ctx.fillText(displayKey, x + SLOT_WIDTH/2, y + SLOT_HEIGHT/2 - 8);
             ctx.font = '12px Inter';
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
@@ -735,24 +904,15 @@
     }
 
     // --- Helpers ---
-    function cloneTable() {
-        return table.map(s => ({ ...s }));
-    }
+    function cloneTable() { return table.map(s => ({ ...s })); }
 
     function getKey() {
         const el = document.getElementById('keyInput');
         if(!el || el.value === '') { el?.focus(); return null; }
-
         const input = el.value.trim();
-
-        // Try to parse as integer
         const num = parseInt(input);
-        if (!isNaN(num) && num.toString() === input) {
-            return num; // Return as integer
-        }
-
-        // Otherwise, treat as string
-        return input; // Return as string
+        if (!isNaN(num) && num.toString() === input) return num;
+        return input;
     }
     
     function getVal() {
@@ -771,13 +931,13 @@
         if(strategy === 'double') formula = 'idx = (h1 + i*h2) % 13';
         document.getElementById('formulaDisplay').textContent = formula;
         
-        handleClear(); // Reset table on strategy change to avoid confusion
+        handleClear();
     }
 
     function handleEnter(e) { if(e.key === 'Enter') handleInsert(); }
     
     function disableControls(dis) {
-        document.querySelectorAll('button:not(.zoom-btn)').forEach(b => b.disabled = dis);
+        document.querySelectorAll('button:not(.zoom-btn):not(.trace-toggle-btn)').forEach(b => b.disabled = dis);
         document.querySelectorAll('input, select').forEach(i => i.disabled = dis);
     }
     
@@ -793,16 +953,16 @@
         if(!isAnimating) setTimeout(() => el.classList.remove('show'), 2000);
     }
 
-    // Camera
     function zoomIn() { scale = Math.min(scale * 1.2, 2); drawTable(null); }
     function zoomOut() { scale = Math.max(scale / 1.2, 0.5); drawTable(null); }
     function resetView() { offsetX = 0; offsetY = 0; scale = 1; drawTable(null); }
 
     // Init
-    handleStrategyChange(); // Set initial label
+    handleStrategyChange(); 
     resizeCanvas();
     drawTable(null);
     showStatus("Ready");
+    addLog("<span style='opacity:0.6'>System Ready. Select a strategy and perform operations to see the trace.</span>");
 
 </script>
 </body>
