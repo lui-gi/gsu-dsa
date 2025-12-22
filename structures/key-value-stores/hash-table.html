@@ -4,39 +4,751 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hash Table - gsu dsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
+        :root {
+            --gsu-blue: #0039A6;
+            --gsu-blue-light: #4d8dff;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            
+            /* Slot Colors */
+            --slot-empty: rgba(255, 255, 255, 0.05);
+            --slot-occupied: #0039A6;
+            --slot-deleted: rgba(204, 0, 0, 0.2); /* Tombstone */
+            --slot-active: #ffc107; /* Probing current */
+            --slot-success: #28a745;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #000c24;
+            color: var(--text-main);
             height: 100vh;
-            background: radial-gradient(circle at top right, #0055CC, #001F5C);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            color: white;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            text-align: center;
+            padding: 20px;
         }
+
+        /* --- BACKGROUND AURA --- */
+        .aura-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .aura-blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+        .blob-1 { background: var(--gsu-blue); width: 700px; height: 700px; top: -10%; left: -10%; animation-duration: 25s; }
+        .blob-2 { background: #0055CC; width: 600px; height: 600px; bottom: -10%; right: -20%; animation-delay: -5s; animation-duration: 30s; }
+        .blob-3 { background: #001F5C; width: 800px; height: 800px; bottom: -20%; left: 20%; opacity: 0.8; animation-delay: -10s; }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 50px) scale(1.1); }
+            100% { transform: translate(-30px, -20px) scale(0.9); }
+        }
+
+        /* --- MAIN GLASS CONTAINER --- */
+        .main-glass-card {
+            width: 100%;
+            max-width: 1600px;
+            height: 95vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- HEADER & CONTROLS --- */
+        header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+            z-index: 20;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        
         h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
         }
-        p {
-            font-size: 18px;
-            opacity: 0.8;
+
+        .back-btn {
+            color: var(--gsu-blue-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.2s;
         }
-        a {
+        .back-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--text-muted); }
+
+        .controls-toolbar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding-left: 12px;
+            border-left: 1px solid var(--glass-border);
+        }
+        .control-group:first-child { border-left: none; padding-left: 0; }
+
+        input[type="number"], input[type="text"] {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
             color: white;
-            text-decoration: underline;
-            margin-top: 20px;
-            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            width: 90px;
+            outline: none;
+            transition: border-color 0.2s;
         }
+        input:focus { border-color: var(--gsu-blue-light); }
+
+        select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+        select option { background: #0f172a; color: white; }
+
+        button {
+            background: rgba(255,255,255,0.08);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-1px);
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        button.primary { background: var(--gsu-blue); border-color: var(--gsu-blue); }
+        button.primary:hover { background: #004BC9; }
+
+        button.danger {
+            background: rgba(204, 0, 0, 0.2);
+            border-color: rgba(204, 0, 0, 0.4);
+            color: #ff6b6b;
+        }
+        button.danger:hover { background: rgba(204, 0, 0, 0.3); border-color: #ff6b6b; }
+
+        /* --- CANVAS AREA --- */
+        #canvas-wrapper {
+            flex-grow: 1;
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            overflow: hidden;
+            cursor: grab;
+        }
+        #canvas-wrapper:active { cursor: grabbing; }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Legend & Stats */
+        .overlay-ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .legend {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+
+        .hash-info {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+        }
+        .hash-info div { margin-bottom: 4px; }
+        .hash-val { color: var(--gsu-blue-light); font-weight: bold; }
+
+        /* Status Message */
+        .status-message {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--gsu-blue-light);
+            color: var(--gsu-blue-light);
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .status-message.show { opacity: 1; }
+
+        /* Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .zoom-btn {
+            width: 40px; height: 40px; padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            background: rgba(15, 23, 42, 0.8);
+            border-color: var(--glass-border);
+            border-radius: 10px;
+        }
+        .zoom-btn:hover { background: rgba(255,255,255,0.1); }
+
     </style>
 </head>
 <body>
-    <h1>Hash Table</h1>
-    <p>Visualization coming soon...</p>
-    <a href="../../index.html">← Back to Navigation</a>
+
+    <div class="aura-container">
+        <div class="aura-blob blob-1"></div>
+        <div class="aura-blob blob-2"></div>
+        <div class="aura-blob blob-3"></div>
+    </div>
+
+    <div class="main-glass-card">
+        <header>
+            <div class="header-left">
+                <a href="#" class="back-btn" onclick="window.parent.closeIframe(); return false;">← Back</a>
+                <h1><i class="fa-solid fa-hashtag" style="margin-right: 12px; color: var(--gsu-blue-light);"></i>Hash Table</h1>
+            </div>
+            
+            <div class="controls-toolbar">
+                <div class="control-group">
+                    <select id="strategySelect" onchange="handleStrategyChange()">
+                        <option value="linear">Linear Probing</option>
+                        <option value="quadratic">Quadratic Probing</option>
+                        <option value="double">Double Hashing</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <input type="number" id="keyInput" placeholder="Key (Int)" onkeypress="handleEnter(event)">
+                    <input type="text" id="valInput" placeholder="Value" style="width:80px;" onkeypress="handleEnter(event)">
+                    <button class="primary" onclick="handleInsert()">Insert</button>
+                </div>
+
+                <div class="control-group">
+                    <button onclick="handleSearch()">Search</button>
+                    <button class="danger" onclick="handleDelete()">Delete</button>
+                </div>
+                
+                <div class="control-group">
+                    <button onclick="handleClear()">Clear</button>
+                </div>
+            </div>
+        </header>
+
+        <div id="canvas-wrapper">
+            <canvas id="hashCanvas"></canvas>
+
+            <div class="status-message" id="statusMessage"></div>
+
+            <div class="overlay-ui">
+                <div class="legend">
+                    <div class="legend-item"><div class="dot" style="color: rgba(255,255,255,0.1); border:1px solid #fff; background: currentColor;"></div>Empty</div>
+                    <div class="legend-item"><div class="dot" style="color: var(--slot-occupied); background: currentColor;"></div>Occupied</div>
+                    <div class="legend-item"><div class="dot" style="color: var(--slot-deleted); background: currentColor;"></div>Deleted (Tombstone)</div>
+                    <div class="legend-item"><div class="dot" style="color: var(--slot-active); background: currentColor;"></div>Probing</div>
+                </div>
+                
+                <div class="hash-info">
+                    <div>Table Size (N): <span class="hash-val">13</span></div>
+                    <div>Strategy: <span class="hash-val" id="strategyDisplay">Linear</span></div>
+                    <div id="formulaDisplay" style="color:#94a3b8; font-size:11px; margin-top:4px;">idx = (k + i) % 13</div>
+                </div>
+            </div>
+
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()"><i class="fa-solid fa-plus"></i></button>
+                <button class="zoom-btn" onclick="zoomOut()"><i class="fa-solid fa-minus"></i></button>
+                <button class="zoom-btn" onclick="resetView()"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const style = getComputedStyle(document.body);
+    const COLORS = {
+        empty: 'rgba(255, 255, 255, 0.05)',
+        occupied: '#0039A6',
+        deleted: 'rgba(204, 0, 0, 0.2)',
+        active: '#ffc107',
+        success: '#28a745',
+        text: '#ffffff',
+        border: 'rgba(255, 255, 255, 0.3)'
+    };
+
+    const canvas = document.getElementById('hashCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Constants from Slides (6.1, 6.2)
+    const TABLE_SIZE = 13; // Prime number
+    const DOUBLE_HASH_PRIME = 11; // Prime < 13
+
+    // Visual Config
+    const SLOT_WIDTH = 80;
+    const SLOT_HEIGHT = 100;
+    const SLOT_GAP = 15;
+
+    // State
+    // status: 'empty', 'occupied', 'deleted'
+    let table = Array(TABLE_SIZE).fill().map(() => ({ key: null, val: null, status: 'empty' }));
+    let animationQueue = [];
+    let isAnimating = false;
+    let strategy = 'linear'; // linear, quadratic, double
+
+    // Camera
+    let offsetX = 0, offsetY = 0, scale = 1;
+    let isDragging = false, dragStartX = 0, dragStartY = 0, lastOffsetX = 0, lastOffsetY = 0;
+
+    // --- Init ---
+    function resizeCanvas() {
+        const wrapper = document.getElementById('canvas-wrapper');
+        if(wrapper) {
+            canvas.width = wrapper.offsetWidth;
+            canvas.height = wrapper.offsetHeight;
+        }
+        if(!isAnimating) drawTable(null);
+    }
+    window.onload = resizeCanvas;
+    window.addEventListener('resize', resizeCanvas);
+
+    // --- Camera ---
+    canvas.addEventListener('mousedown', e => { isDragging = true; dragStartX = e.clientX; dragStartY = e.clientY; lastOffsetX = offsetX; lastOffsetY = offsetY; canvas.style.cursor = 'grabbing'; });
+    canvas.addEventListener('mousemove', e => { if(isDragging) { offsetX = lastOffsetX + (e.clientX - dragStartX); offsetY = lastOffsetY + (e.clientY - dragStartY); if(!isAnimating) drawTable(null); } });
+    canvas.addEventListener('mouseup', () => { isDragging = false; canvas.style.cursor = 'grab'; });
+    canvas.addEventListener('mouseleave', () => { isDragging = false; canvas.style.cursor = 'grab'; });
+    canvas.addEventListener('wheel', e => { e.preventDefault(); const s = e.deltaY < 0 ? 1.1 : 0.9; scale = Math.min(Math.max(scale * s, 0.5), 2); if(!isAnimating) drawTable(null); });
+
+    // --- Logic ---
+
+    // Hash Functions (Integers as per slides)
+    function h1(key) { return key % TABLE_SIZE; }
+    function h2(key) { return DOUBLE_HASH_PRIME - (key % DOUBLE_HASH_PRIME); }
+
+    function getNextIndex(key, i) {
+        let base = h1(key);
+        if (strategy === 'linear') {
+            return (base + i) % TABLE_SIZE;
+        } else if (strategy === 'quadratic') {
+            return (base + i * i) % TABLE_SIZE;
+        } else if (strategy === 'double') {
+            let step = h2(key);
+            return (base + i * step) % TABLE_SIZE;
+        }
+        return base;
+    }
+
+    function handleInsert() {
+        const k = getKey();
+        const v = getVal();
+        if (k === null || v === null) return;
+
+        animationQueue = [];
+        let i = 0;
+        let visited = new Set(); // Prevent infinite loops visually
+
+        // Start Probing
+        while (i < TABLE_SIZE) {
+            const idx = getNextIndex(k, i);
+            
+            // Check for loop (table full or cycle)
+            if (visited.has(idx)) {
+                animationQueue.push({ type: 'error', tableSnapshot: cloneTable(), msg: "Table Full / Cycle Detected!" });
+                break;
+            }
+            visited.add(idx);
+
+            // Visual Probe Step
+            animationQueue.push({ 
+                type: 'probe', 
+                tableSnapshot: cloneTable(), 
+                targetIndex: idx, 
+                probeIndex: i, // which step of probe are we on (0, 1, 2...)
+                msg: `Probing index ${idx} (i=${i})` 
+            });
+
+            // Check Slot
+            const slot = table[idx];
+            if (slot.status === 'empty' || slot.status === 'deleted') {
+                // Found Spot
+                const newTable = cloneTable();
+                newTable[idx] = { key: k, val: v, status: 'occupied' };
+                animationQueue.push({ 
+                    type: 'success', 
+                    tableSnapshot: newTable, 
+                    targetIndex: idx,
+                    msg: `Inserted Key ${k} at Index ${idx}` 
+                });
+                table[idx] = { key: k, val: v, status: 'occupied' };
+                break;
+            } else if (slot.status === 'occupied' && slot.key === k) {
+                // Update existing key
+                const newTable = cloneTable();
+                newTable[idx] = { key: k, val: v, status: 'occupied' };
+                animationQueue.push({ 
+                    type: 'success', 
+                    tableSnapshot: newTable, 
+                    targetIndex: idx,
+                    msg: `Updated Key ${k} at Index ${idx}` 
+                });
+                table[idx] = { key: k, val: v, status: 'occupied' };
+                break;
+            } else {
+                // Collision
+                animationQueue.push({ 
+                    type: 'collision', 
+                    tableSnapshot: cloneTable(), 
+                    targetIndex: idx,
+                    msg: `Collision at ${idx}!` 
+                });
+            }
+            i++;
+        }
+        
+        if (i === TABLE_SIZE) {
+             animationQueue.push({ type: 'error', tableSnapshot: cloneTable(), msg: "Table Full (Probed all slots)" });
+        }
+
+        runAnimation();
+        clearInputs();
+    }
+
+    function handleSearch() {
+        const k = getKey();
+        if (k === null) return;
+
+        animationQueue = [];
+        let i = 0;
+        let visited = new Set();
+
+        while (i < TABLE_SIZE) {
+            const idx = getNextIndex(k, i);
+            if (visited.has(idx)) break;
+            visited.add(idx);
+
+            animationQueue.push({ type: 'probe', tableSnapshot: cloneTable(), targetIndex: idx, probeIndex: i, msg: `Checking index ${idx}...` });
+
+            const slot = table[idx];
+            if (slot.status === 'empty') {
+                // Not found (hit empty)
+                animationQueue.push({ type: 'error', tableSnapshot: cloneTable(), targetIndex: idx, msg: "Key not found (Hit Empty)" });
+                break;
+            } else if (slot.status === 'occupied' && slot.key === k) {
+                // Found
+                animationQueue.push({ type: 'success', tableSnapshot: cloneTable(), targetIndex: idx, msg: `Found Key ${k}: ${slot.val}` });
+                break;
+            }
+            // If 'deleted' or non-matching occupied, continue probing
+            i++;
+        }
+        if (i === TABLE_SIZE || visited.size === TABLE_SIZE) {
+             animationQueue.push({ type: 'error', tableSnapshot: cloneTable(), msg: "Key not found (Exhausted probe)" });
+        }
+        runAnimation();
+        clearInputs();
+    }
+
+    function handleDelete() {
+        const k = getKey();
+        if (k === null) return;
+
+        animationQueue = [];
+        let i = 0;
+        let visited = new Set();
+
+        while (i < TABLE_SIZE) {
+            const idx = getNextIndex(k, i);
+            if (visited.has(idx)) break;
+            visited.add(idx);
+
+            animationQueue.push({ type: 'probe', tableSnapshot: cloneTable(), targetIndex: idx, probeIndex: i, msg: `Checking index ${idx}...` });
+
+            const slot = table[idx];
+            if (slot.status === 'empty') {
+                animationQueue.push({ type: 'error', tableSnapshot: cloneTable(), targetIndex: idx, msg: "Key not found" });
+                break;
+            } else if (slot.status === 'occupied' && slot.key === k) {
+                // Found -> Delete (Mark Tombstone)
+                const newTable = cloneTable();
+                newTable[idx] = { key: null, val: null, status: 'deleted' };
+                animationQueue.push({ type: 'success', tableSnapshot: newTable, targetIndex: idx, msg: `Deleted Key ${k} (Marked Tombstone)` });
+                table[idx] = { key: null, val: null, status: 'deleted' };
+                break;
+            }
+            i++;
+        }
+        runAnimation();
+        clearInputs();
+    }
+
+    // --- Animation Engine ---
+    function runAnimation() {
+        if(isAnimating || animationQueue.length === 0) return;
+        isAnimating = true;
+        disableControls(true);
+        let stepIndex = 0;
+
+        const process = () => {
+            if(stepIndex >= animationQueue.length) {
+                isAnimating = false;
+                disableControls(false);
+                drawTable(null);
+                return;
+            }
+            const step = animationQueue[stepIndex++];
+            if(step.msg) showStatus(step.msg);
+            
+            drawTable(step);
+            
+            // Adjust speed based on step type
+            let duration = 600;
+            if(step.type === 'probe') duration = 500;
+            if(step.type === 'collision') duration = 400;
+
+            setTimeout(process, duration);
+        };
+        process();
+    }
+
+    // --- Drawing ---
+    function drawTable(step) {
+        if(!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        
+        ctx.save();
+        ctx.translate(offsetX + centerX, offsetY + centerY);
+        ctx.scale(scale, scale);
+
+        const data = step ? step.tableSnapshot : table;
+        
+        // Calculate Dimensions
+        const totalWidth = TABLE_SIZE * (SLOT_WIDTH + SLOT_GAP) - SLOT_GAP;
+        const startX = -totalWidth / 2;
+        const startY = -SLOT_HEIGHT / 2;
+
+        // Draw Slots
+        for(let i=0; i<TABLE_SIZE; i++) {
+            const x = startX + i * (SLOT_WIDTH + SLOT_GAP);
+            const slot = data[i];
+            
+            let color = COLORS.empty;
+            let borderColor = COLORS.border;
+            
+            if (slot.status === 'occupied') color = COLORS.occupied;
+            if (slot.status === 'deleted') color = COLORS.deleted;
+
+            // Step Highlighting
+            if (step && step.targetIndex === i) {
+                if (step.type === 'probe') color = COLORS.active;
+                if (step.type === 'collision') { color = COLORS.active; borderColor = COLORS.error; }
+                if (step.type === 'success') color = COLORS.success;
+                if (step.type === 'error') { borderColor = COLORS.error; }
+            }
+
+            drawSlot(ctx, x, startY, slot, i, color, borderColor);
+        }
+
+        // Draw Probe Arcs (Jump Visualization)
+        if (step && step.type !== 'success' && step.type !== 'error' && step.probeIndex > 0) {
+            // Draw arc from previous probe index to current
+            // Re-calculate previous index
+            // Not stored directly, but we can assume 'linear' implies i-1, others imply specific logic
+            // Easier: Probe Step should probably contain 'prevIndex' if we want exact arcs
+            // For now, let's just draw an arc from the center of the table (logical source) or imply flow
+            
+            // Better visual: If we are at step i, we came from step i-1. 
+            // Let's recompute prev index just for visual
+            // This assumes key didn't change (it shouldn't during anim)
+            // But we don't have 'key' in step easily accessible without parsing message or storing it
+            // Let's just highlight the current slot clearly. 
+            // Advanced: If I wanted arcs, I'd need the Key to recompute the previous hop.
+        }
+
+        ctx.restore();
+    }
+
+    function drawSlot(ctx, x, y, slot, idx, bgColor, borderColor) {
+        // Body
+        ctx.fillStyle = bgColor;
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 2;
+        
+        ctx.beginPath();
+        ctx.roundRect(x, y, SLOT_WIDTH, SLOT_HEIGHT, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        // Index Label (Top)
+        ctx.fillStyle = COLORS.text;
+        ctx.font = '12px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText(idx, x + SLOT_WIDTH/2, y - 10);
+
+        // Content
+        if (slot.status === 'occupied') {
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 16px Inter';
+            ctx.fillText(slot.key, x + SLOT_WIDTH/2, y + SLOT_HEIGHT/2 - 8);
+            ctx.font = '12px Inter';
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillText(slot.val, x + SLOT_WIDTH/2, y + SLOT_HEIGHT/2 + 12);
+        } else if (slot.status === 'deleted') {
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = 'bold 14px Inter';
+            ctx.fillText("DEL", x + SLOT_WIDTH/2, y + SLOT_HEIGHT/2);
+        }
+    }
+
+    // --- Helpers ---
+    function cloneTable() {
+        return table.map(s => ({ ...s }));
+    }
+
+    function getKey() {
+        const el = document.getElementById('keyInput');
+        if(!el || el.value === '') { el?.focus(); return null; }
+        const val = parseInt(el.value);
+        if(isNaN(val)) { showStatus("Key must be Integer (for simple hashing)"); return null; }
+        return val;
+    }
+    
+    function getVal() {
+        const el = document.getElementById('valInput');
+        return el ? (el.value || 'Val') : 'Val';
+    }
+
+    function handleStrategyChange() {
+        strategy = document.getElementById('strategySelect').value;
+        const display = strategy.charAt(0).toUpperCase() + strategy.slice(1);
+        document.getElementById('strategyDisplay').textContent = display;
+        
+        let formula = '';
+        if(strategy === 'linear') formula = 'idx = (h1 + i) % 13';
+        if(strategy === 'quadratic') formula = 'idx = (h1 + i²) % 13';
+        if(strategy === 'double') formula = 'idx = (h1 + i*h2) % 13';
+        document.getElementById('formulaDisplay').textContent = formula;
+        
+        handleClear(); // Reset table on strategy change to avoid confusion
+    }
+
+    function handleEnter(e) { if(e.key === 'Enter') handleInsert(); }
+    
+    function disableControls(dis) {
+        document.querySelectorAll('button:not(.zoom-btn)').forEach(b => b.disabled = dis);
+        document.querySelectorAll('input, select').forEach(i => i.disabled = dis);
+    }
+    
+    function clearInputs() {
+        document.getElementById('keyInput').value = '';
+        document.getElementById('valInput').value = '';
+        document.getElementById('keyInput').focus();
+    }
+
+    function showStatus(msg) {
+        const el = document.getElementById('statusMessage');
+        el.textContent = msg; el.classList.add('show');
+        if(!isAnimating) setTimeout(() => el.classList.remove('show'), 2000);
+    }
+
+    // Camera
+    function zoomIn() { scale = Math.min(scale * 1.2, 2); drawTable(null); }
+    function zoomOut() { scale = Math.max(scale / 1.2, 0.5); drawTable(null); }
+    function resetView() { offsetX = 0; offsetY = 0; scale = 1; drawTable(null); }
+
+    // Init
+    handleStrategyChange(); // Set initial label
+    resizeCanvas();
+    drawTable(null);
+    showStatus("Ready");
+
+</script>
 </body>
 </html>
