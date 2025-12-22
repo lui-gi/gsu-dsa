@@ -4,39 +4,764 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dictionary - gsu dsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
+        :root {
+            --gsu-blue: #0039A6;
+            --gsu-blue-light: #4d8dff;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            
+            /* Entry Colors */
+            --key-bg: #0f172a;      /* Darker for immutable key */
+            --val-bg: #0039A6;      /* GSU Blue for mutable value */
+            --highlight: #ffc107;   /* Scanning/Compare */
+            --success: #28a745;     /* Found/Inserted */
+            --error: #CC0000;       /* Delete/Error */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #000c24;
+            color: var(--text-main);
             height: 100vh;
-            background: radial-gradient(circle at top right, #0055CC, #001F5C);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            color: white;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            text-align: center;
+            padding: 20px;
         }
+
+        /* --- BACKGROUND AURA --- */
+        .aura-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .aura-blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+        .blob-1 { background: var(--gsu-blue); width: 700px; height: 700px; top: -10%; left: -10%; animation-duration: 25s; }
+        .blob-2 { background: #0055CC; width: 600px; height: 600px; bottom: -10%; right: -20%; animation-delay: -5s; animation-duration: 30s; }
+        .blob-3 { background: #001F5C; width: 800px; height: 800px; bottom: -20%; left: 20%; opacity: 0.8; animation-delay: -10s; }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 50px) scale(1.1); }
+            100% { transform: translate(-30px, -20px) scale(0.9); }
+        }
+
+        /* --- MAIN GLASS CONTAINER --- */
+        .main-glass-card {
+            width: 100%;
+            max-width: 1600px;
+            height: 95vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- HEADER & CONTROLS --- */
+        header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+            z-index: 20;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        
         h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
         }
-        p {
-            font-size: 18px;
-            opacity: 0.8;
+
+        .back-btn {
+            color: var(--gsu-blue-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.2s;
         }
-        a {
+        .back-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--text-muted); }
+
+        .controls-toolbar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding-left: 12px;
+            border-left: 1px solid var(--glass-border);
+        }
+        .control-group:first-child { border-left: none; padding-left: 0; }
+
+        input[type="text"] {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
             color: white;
-            text-decoration: underline;
-            margin-top: 20px;
-            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            width: 100px;
+            outline: none;
+            transition: border-color 0.2s;
         }
+        input:focus { border-color: var(--gsu-blue-light); }
+        input::placeholder { color: rgba(255,255,255,0.3); }
+
+        button {
+            background: rgba(255,255,255,0.08);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-1px);
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        button.primary { background: var(--gsu-blue); border-color: var(--gsu-blue); }
+        button.primary:hover { background: #004BC9; }
+
+        button.danger {
+            background: rgba(204, 0, 0, 0.2);
+            border-color: rgba(204, 0, 0, 0.4);
+            color: #ff6b6b;
+        }
+        button.danger:hover { background: rgba(204, 0, 0, 0.3); border-color: #ff6b6b; }
+
+        /* --- CANVAS AREA --- */
+        #canvas-wrapper {
+            flex-grow: 1;
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            overflow: hidden;
+            cursor: grab;
+        }
+        #canvas-wrapper:active { cursor: grabbing; }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Overlay UI */
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10;
+        }
+        .zoom-btn {
+            width: 40px; height: 40px; padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            background: rgba(15, 23, 42, 0.8);
+            border-color: var(--glass-border);
+            border-radius: 10px;
+        }
+        .zoom-btn:hover { background: rgba(255,255,255,0.1); }
+
+        .legend {
+            position: absolute;
+            top: 20px; left: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 10px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+
+        .status-message {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--gsu-blue-light);
+            color: var(--gsu-blue-light);
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .status-message.show { opacity: 1; }
+
+        /* --- LOGICAL VIEW --- */
+        #logical-container {
+            height: 120px;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+            padding: 20px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .dict-text { color: var(--text-main); }
+
     </style>
 </head>
 <body>
-    <h1>Dictionary</h1>
-    <p>Visualization coming soon...</p>
-    <a href="../../index.html">← Back to Navigation</a>
+
+    <div class="aura-container">
+        <div class="aura-blob blob-1"></div>
+        <div class="aura-blob blob-2"></div>
+        <div class="aura-blob blob-3"></div>
+    </div>
+
+    <div class="main-glass-card">
+        <header>
+            <div class="header-left">
+                <a href="#" class="back-btn" onclick="window.parent.closeIframe(); return false;">← Back</a>
+                <h1><i class="fa-solid fa-book" style="margin-right: 12px; color: var(--gsu-blue-light);"></i>Dictionary</h1>
+            </div>
+            
+            <div class="controls-toolbar">
+                <div class="control-group">
+                    <input type="text" id="keyInput" placeholder="Key" style="width: 80px;" onkeypress="handleEnter(event)">
+                    <input type="text" id="valInput" placeholder="Value" style="width: 80px;" onkeypress="handleEnter(event)">
+                    <button class="primary" onclick="handlePut()">Put</button>
+                </div>
+
+                <div class="control-group">
+                    <button onclick="handleGet()">Get</button>
+                    <button class="danger" onclick="handleDelete()">Del</button>
+                    <button onclick="handleContains()">k in M?</button>
+                </div>
+                
+                <div class="control-group">
+                    <button onclick="handleClear()">Clear</button>
+                </div>
+            </div>
+        </header>
+
+        <div id="canvas-wrapper">
+            <canvas id="dictCanvas"></canvas>
+
+            <div class="status-message" id="statusMessage"></div>
+
+            <div class="legend">
+                <div class="legend-item"><div class="dot" style="color: #0f172a; border:1px solid #fff; background: currentColor;"></div>Key (Immutable)</div>
+                <div class="legend-item"><div class="dot" style="color: var(--gsu-blue); background: currentColor;"></div>Value (Mutable)</div>
+                <div class="legend-item"><div class="dot" style="color: var(--highlight); background: currentColor;"></div>Scanning</div>
+            </div>
+
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()"><i class="fa-solid fa-plus"></i></button>
+                <button class="zoom-btn" onclick="zoomOut()"><i class="fa-solid fa-minus"></i></button>
+                <button class="zoom-btn" onclick="resetView()"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+        </div>
+
+        <div id="logical-container">
+            <span id="logicalText">dict = { }</span>
+        </div>
+    </div>
+
+<script>
+    const style = getComputedStyle(document.body);
+    const COLORS = {
+        key: '#0f172a',
+        val: '#0039A6',
+        highlight: '#ffc107',
+        success: '#28a745',
+        error: '#CC0000',
+        text: '#ffffff'
+    };
+
+    const canvas = document.getElementById('dictCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Config
+    const ENTRY_HEIGHT = 60;
+    const MIN_WIDTH = 100; // Min width for a capsule
+    const GAP = 20;
+    const BRACE_SIZE = 80;
+
+    // State
+    // Dictionary is a list of objects { key: str, val: str, id: num }
+    let dictionary = [];
+    let animationQueue = [];
+    let isAnimating = false;
+    let nextId = 1;
+
+    // Camera
+    let offsetX = 0;
+    let offsetY = 0;
+    let scale = 1;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let lastOffsetX = 0;
+    let lastOffsetY = 0;
+
+    // --- Init ---
+    function resizeCanvas() {
+        const wrapper = document.getElementById('canvas-wrapper');
+        if(wrapper) {
+            canvas.width = wrapper.offsetWidth;
+            canvas.height = wrapper.offsetHeight;
+        }
+        if(!isAnimating) drawDict(null);
+    }
+    window.onload = resizeCanvas;
+    window.addEventListener('resize', resizeCanvas);
+
+    // --- Camera ---
+    canvas.addEventListener('mousedown', e => {
+        isDragging = true; dragStartX = e.clientX; dragStartY = e.clientY;
+        lastOffsetX = offsetX; lastOffsetY = offsetY;
+        canvas.style.cursor = 'grabbing';
+    });
+    canvas.addEventListener('mousemove', e => {
+        if(isDragging) {
+            offsetX = lastOffsetX + (e.clientX - dragStartX);
+            offsetY = lastOffsetY + (e.clientY - dragStartY);
+            if(!isAnimating) drawDict(null);
+        }
+    });
+    canvas.addEventListener('mouseup', () => { isDragging = false; canvas.style.cursor = 'grab'; });
+    canvas.addEventListener('mouseleave', () => { isDragging = false; canvas.style.cursor = 'grab'; });
+    canvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        const s = e.deltaY < 0 ? 1.1 : 0.9;
+        scale = Math.min(Math.max(scale * s, 0.5), 2.5);
+        if(!isAnimating) drawDict(null);
+    });
+
+    // --- Operations ---
+
+    function handlePut() {
+        const k = getKey();
+        const v = getVal();
+        if(!k || !v) { showStatus("Key and Value required"); return; }
+
+        animationQueue = [];
+        
+        // 1. Scan for key
+        const existingIdx = dictionary.findIndex(entry => entry.key === k);
+        
+        // Scan Animation
+        for(let i=0; i<dictionary.length; i++) {
+            animationQueue.push({ type: 'scan', dictSnapshot: [...dictionary], targetIndex: i });
+            if(dictionary[i].key === k) break;
+        }
+
+        if(existingIdx !== -1) {
+            // Update
+            animationQueue.push({ 
+                type: 'update-start', dictSnapshot: [...dictionary], targetIndex: existingIdx,
+                msg: `Key '${k}' found. Updating value.`
+            });
+            
+            // Perform Update
+            dictionary[existingIdx].val = v;
+            
+            animationQueue.push({ 
+                type: 'success', dictSnapshot: [...dictionary], targetIndex: existingIdx,
+                msg: `M['${k}'] = '${v}'`
+            });
+        } else {
+            // Insert
+            const newEntry = { key: k, val: v, id: nextId++ };
+            
+            // Spawn animation (flying in?)
+            // We'll just fade/scale it in at the end
+            const tempDict = [...dictionary, newEntry];
+            
+            animationQueue.push({ 
+                type: 'spawn', dictSnapshot: tempDict, targetIndex: dictionary.length,
+                msg: `Key '${k}' not found. Creating new entry.`
+            });
+            
+            dictionary.push(newEntry);
+            
+            animationQueue.push({ 
+                type: 'idle', dictSnapshot: [...dictionary],
+                msg: `M['${k}'] = '${v}'`
+            });
+        }
+        updateLogicalView();
+        runAnimation();
+        clearInputs();
+    }
+
+    function handleGet() {
+        const k = getKey();
+        if(!k) { showStatus("Key required"); return; }
+        
+        animationQueue = [];
+        const idx = dictionary.findIndex(e => e.key === k);
+        
+        // Scan
+        for(let i=0; i<dictionary.length; i++) {
+            animationQueue.push({ type: 'scan', dictSnapshot: [...dictionary], targetIndex: i });
+            if(dictionary[i].key === k) break;
+        }
+
+        if(idx !== -1) {
+            animationQueue.push({ 
+                type: 'success', dictSnapshot: [...dictionary], targetIndex: idx,
+                msg: `Found: ${dictionary[idx].val}`
+            });
+        } else {
+            animationQueue.push({ 
+                type: 'error', dictSnapshot: [...dictionary],
+                msg: `KeyError: '${k}' not found`
+            });
+        }
+        runAnimation();
+    }
+
+    function handleDelete() {
+        const k = getKey();
+        if(!k) { showStatus("Key required"); return; }
+        
+        animationQueue = [];
+        const idx = dictionary.findIndex(e => e.key === k);
+        
+        // Scan
+        for(let i=0; i<dictionary.length; i++) {
+            animationQueue.push({ type: 'scan', dictSnapshot: [...dictionary], targetIndex: i });
+            if(dictionary[i].key === k) break;
+        }
+
+        if(idx !== -1) {
+            animationQueue.push({ 
+                type: 'delete', dictSnapshot: [...dictionary], targetIndex: idx,
+                msg: `Deleting M['${k}']`
+            });
+            dictionary.splice(idx, 1);
+            animationQueue.push({ type: 'idle', dictSnapshot: [...dictionary] });
+        } else {
+            animationQueue.push({ type: 'error', dictSnapshot: [...dictionary], msg: "Key not found" });
+        }
+        updateLogicalView();
+        runAnimation();
+        clearInputs();
+    }
+
+    function handleContains() {
+        const k = getKey();
+        if(!k) { showStatus("Key required"); return; }
+        
+        animationQueue = [];
+        const idx = dictionary.findIndex(e => e.key === k);
+        
+        for(let i=0; i<dictionary.length; i++) {
+            animationQueue.push({ type: 'scan', dictSnapshot: [...dictionary], targetIndex: i });
+            if(dictionary[i].key === k) break;
+        }
+
+        if(idx !== -1) {
+            animationQueue.push({ type: 'success', dictSnapshot: [...dictionary], targetIndex: idx, msg: "True" });
+        } else {
+            animationQueue.push({ type: 'error', dictSnapshot: [...dictionary], msg: "False" });
+        }
+        runAnimation();
+    }
+
+    function handleClear() {
+        dictionary = [];
+        animationQueue = [];
+        drawDict(null);
+        updateLogicalView();
+        showStatus("Cleared");
+    }
+
+    // --- Animation Engine ---
+    function runAnimation() {
+        if(isAnimating || animationQueue.length === 0) return;
+        isAnimating = true;
+        disableControls(true);
+        let stepIndex = 0;
+
+        const process = () => {
+            if(stepIndex >= animationQueue.length) {
+                isAnimating = false;
+                disableControls(false);
+                drawDict(null);
+                return;
+            }
+            const step = animationQueue[stepIndex++];
+            if(step.msg) showStatus(step.msg);
+            
+            let duration = 500;
+            if(step.type === 'scan') duration = 300;
+            if(step.type === 'error') duration = 1000;
+
+            if(step.type === 'delete') {
+                // Fade out animation
+                const startTime = performance.now();
+                const animateFade = (time) => {
+                    let p = (time - startTime) / duration;
+                    if(p > 1) p = 1;
+                    drawDict(step, { opacity: 1 - p });
+                    if(p < 1) requestAnimationFrame(animateFade);
+                    else process();
+                };
+                requestAnimationFrame(animateFade);
+            } 
+            else if(step.type === 'spawn') {
+                // Grow in
+                const startTime = performance.now();
+                const animateGrow = (time) => {
+                    let p = (time - startTime) / duration;
+                    if(p > 1) p = 1;
+                    const ease = t => t*(2-t);
+                    drawDict(step, { scale: ease(p) });
+                    if(p < 1) requestAnimationFrame(animateGrow);
+                    else process();
+                };
+                requestAnimationFrame(animateGrow);
+            }
+            else {
+                drawDict(step);
+                setTimeout(process, duration);
+            }
+        };
+        process();
+    }
+
+    // --- Drawing ---
+    function drawDict(step, animState = null) {
+        if(!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        
+        ctx.save();
+        ctx.translate(offsetX + centerX, offsetY + centerY);
+        ctx.scale(scale, scale);
+
+        const data = step ? step.dictSnapshot : dictionary;
+        
+        // Calculate widths
+        ctx.font = 'bold 20px Inter';
+        const capsuleData = data.map(e => {
+            const kw = ctx.measureText(e.key).width + 30;
+            const vw = ctx.measureText(e.val).width + 30;
+            return { w: kw + vw, kw, vw, key: e.key, val: e.val };
+        });
+
+        const totalWidth = capsuleData.reduce((acc, c) => acc + c.w + GAP, 0) + (2 * BRACE_SIZE) - GAP;
+        const startX = -totalWidth / 2;
+
+        // Draw Left Brace
+        drawBrace(startX, 0, true, (step && step.type === 'error'));
+
+        let currentX = startX + BRACE_SIZE;
+
+        capsuleData.forEach((capsule, i) => {
+            let opacity = 1.0;
+            let entryScale = 1.0;
+            let color = COLORS.key;
+            let valColor = COLORS.val;
+
+            if(step) {
+                if(step.targetIndex === i) {
+                    if(step.type === 'scan') { color = COLORS.highlight; valColor = COLORS.highlight; }
+                    if(step.type === 'success') { color = COLORS.success; valColor = COLORS.success; }
+                    if(step.type === 'update-start') { valColor = COLORS.highlight; } // Just val changes
+                    if(step.type === 'delete' && animState) opacity = animState.opacity;
+                    if(step.type === 'spawn' && animState) entryScale = animState.scale;
+                }
+            }
+
+            drawCapsule(currentX, 0, capsule, color, valColor, opacity, entryScale);
+            currentX += capsule.w + GAP;
+        });
+
+        // Draw Right Brace
+        drawBrace(currentX - GAP + (step && step.type === 'spawn' ? GAP : 0), 0, false, (step && step.type === 'error'));
+
+        ctx.restore();
+    }
+
+    function drawCapsule(x, y, data, kColor, vColor, opacity, scale) {
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        
+        // Center scaling
+        const cx = x + data.w / 2;
+        const cy = y;
+        ctx.translate(cx, cy);
+        ctx.scale(scale, scale);
+        ctx.translate(-cx, -cy);
+
+        const h = ENTRY_HEIGHT;
+        const r = 10; // corner radius
+
+        // Key Part (Left)
+        ctx.fillStyle = kColor;
+        ctx.beginPath();
+        // Custom round rect: left rounded, right flat
+        ctx.moveTo(x + r, y - h/2);
+        ctx.lineTo(x + data.kw, y - h/2);
+        ctx.lineTo(x + data.kw, y + h/2);
+        ctx.lineTo(x + r, y + h/2);
+        ctx.quadraticCurveTo(x, y + h/2, x, y + h/2 - r);
+        ctx.lineTo(x, y - h/2 + r);
+        ctx.quadraticCurveTo(x, y - h/2, x + r, y - h/2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1; ctx.stroke();
+
+        // Key Text
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(data.key, x + data.kw/2, y);
+
+        // Value Part (Right)
+        ctx.fillStyle = vColor;
+        ctx.beginPath();
+        // Left flat, right rounded
+        ctx.moveTo(x + data.kw, y - h/2);
+        ctx.lineTo(x + data.w - r, y - h/2);
+        ctx.quadraticCurveTo(x + data.w, y - h/2, x + data.w, y - h/2 + r);
+        ctx.lineTo(x + data.w, y + h/2 - r);
+        ctx.quadraticCurveTo(x + data.w, y + h/2, x + data.w - r, y + h/2);
+        ctx.lineTo(x + data.kw, y + h/2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Separator Line
+        ctx.beginPath();
+        ctx.moveTo(x + data.kw, y - h/2);
+        ctx.lineTo(x + data.kw, y + h/2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.stroke();
+
+        // Value Text
+        ctx.fillStyle = '#fff';
+        ctx.fillText(data.val, x + data.kw + data.vw/2, y);
+
+        // Colon (Optional decoration)
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.font = '14px Inter';
+        ctx.fillText(":", x + data.kw, y);
+
+        ctx.restore();
+    }
+
+    function drawBrace(x, y, isLeft, isError) {
+        ctx.save();
+        ctx.fillStyle = isError ? COLORS.error : '#fff';
+        ctx.font = 'bold 100px Inter';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(isLeft ? '{' : '}', x + BRACE_SIZE/2, y - 5);
+        ctx.restore();
+    }
+
+    // --- Helpers ---
+    function getKey() {
+        const el = document.getElementById('keyInput');
+        if(!el || !el.value) { el?.focus(); return null; }
+        return el.value.trim();
+    }
+    function getVal() {
+        const el = document.getElementById('valInput');
+        if(!el || !el.value) { el?.focus(); return null; }
+        return el.value.trim();
+    }
+    function handleEnter(e) { if(e.key === 'Enter') handlePut(); }
+    
+    function disableControls(dis) {
+        document.querySelectorAll('button:not(.zoom-btn)').forEach(b => b.disabled = dis);
+        document.querySelectorAll('input').forEach(i => i.disabled = dis);
+    }
+    
+    function clearInputs() {
+        document.getElementById('keyInput').value = '';
+        document.getElementById('valInput').value = '';
+        document.getElementById('keyInput').focus();
+    }
+
+    function showStatus(msg) {
+        const el = document.getElementById('statusMessage');
+        el.textContent = msg; el.classList.add('show');
+        if(!isAnimating) setTimeout(() => el.classList.remove('show'), 2000);
+    }
+
+    function updateLogicalView() {
+        const el = document.getElementById('logicalText');
+        const items = dictionary.map(e => `'${e.key}': '${e.val}'`).join(', ');
+        el.textContent = `dict = { ${items} }`;
+    }
+
+    // Camera
+    function zoomIn() { scale = Math.min(scale * 1.2, 2.5); drawDict(null); }
+    function zoomOut() { scale = Math.max(scale / 1.2, 0.5); drawDict(null); }
+    function resetView() { offsetX = 0; offsetY = 0; scale = 1; drawDict(null); }
+
+    // Init
+    resizeCanvas();
+    drawDict(null);
+    showStatus("Ready");
+
+</script>
 </body>
 </html>
