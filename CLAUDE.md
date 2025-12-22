@@ -134,18 +134,4 @@ box-shadow: 0 8px 32px rgba(0, 57, 166, 0.08);
 ## To-Dos:
 
 - **Implement functionality for the structures**: Use heap.html as a UI template/baseline, then incorporate the other structures by folder.
-- **Add loading screen animation**: 1. The "Splash-to-HUD" Transition (Typography Focus)
-This proposal connects your branding ("gsu dsa") directly to the UI. It mimics the "editorial" feel of The Browser Company by making the text the protagonist of the load.
-
-The Concept: The site title doesn't just appear; it travels to its position.
-
-The Animation:
-
-Initial State: The #clock element (which contains "gsu dsa") starts in the exact center of the screen, scaled up 2x, with opacity: 0. The #category-row is hidden (opacity 0).
-
-Action: The text "gsu dsa" fades in and holds for 0.5s. Then, it smoothly transitions (using a bezier curve) to its final CSS position (top: 40px, right: 50px) and scales down to normal size.
-
-Reveal: As the text locks into the corner, the #category-row slides up from the bottom to fill the empty space.
-
-Why it fits: It utilizes the existing #clock div and establishes the spatial relationship of the "HUD" before showing the content.
 
