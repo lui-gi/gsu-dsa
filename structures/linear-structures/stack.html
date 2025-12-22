@@ -3,40 +3,810 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stack - gsu dsa</title>
+    <title>Stack Visualization - gsu dsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
+        :root {
+            /* Palette matched to About/Heap pages */
+            --gsu-blue: #0039A6;
+            --gsu-blue-light: #4d8dff;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            
+            /* Node Colors */
+            --node-normal: #0039A6;
+            --node-active: #CC0000;  /* For Pop */
+            --node-success: #28a745; /* For Peek */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #000c24;
+            color: var(--text-main);
             height: 100vh;
-            background: radial-gradient(circle at top right, #0055CC, #001F5C);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            color: white;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            text-align: center;
+            padding: 20px;
         }
+
+        /* --- BACKGROUND AURA --- */
+        .aura-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .aura-blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+        .blob-1 { background: var(--gsu-blue); width: 700px; height: 700px; top: -10%; left: -10%; animation-duration: 25s; }
+        .blob-2 { background: #0055CC; width: 600px; height: 600px; bottom: -10%; right: -20%; animation-delay: -5s; animation-duration: 30s; }
+        .blob-3 { background: #001F5C; width: 800px; height: 800px; bottom: -20%; left: 20%; opacity: 0.8; animation-delay: -10s; }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 50px) scale(1.1); }
+            100% { transform: translate(-30px, -20px) scale(0.9); }
+        }
+
+        /* --- MAIN GLASS CONTAINER --- */
+        .main-glass-card {
+            width: 100%;
+            max-width: 1600px;
+            height: 95vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- HEADER & CONTROLS --- */
+        header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        
         h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
         }
-        p {
-            font-size: 18px;
-            opacity: 0.8;
+
+        .back-btn {
+            color: var(--gsu-blue-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.2s;
         }
-        a {
+        .back-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--text-muted); }
+
+        .controls-toolbar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding-left: 12px;
+            border-left: 1px solid var(--glass-border);
+        }
+        .control-group:first-child { border-left: none; padding-left: 0; }
+
+        /* Inputs & Buttons */
+        input[type="number"] {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
             color: white;
-            text-decoration: underline;
-            margin-top: 20px;
-            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            width: 100px;
+            outline: none;
+            transition: border-color 0.2s;
         }
+        input:focus { border-color: var(--gsu-blue-light); }
+
+        button {
+            background: rgba(255,255,255,0.08);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-1px);
+        }
+        button.primary {
+            background: var(--gsu-blue);
+            border-color: var(--gsu-blue);
+        }
+        button.primary:hover { background: #004BC9; }
+
+        button.danger {
+            background: rgba(204, 0, 0, 0.2);
+            border-color: rgba(204, 0, 0, 0.4);
+            color: #ff6b6b;
+        }
+        button.danger:hover { background: rgba(204, 0, 0, 0.3); border-color: #ff6b6b; }
+
+        /* --- CANVAS AREA --- */
+        #canvas-wrapper {
+            flex-grow: 1;
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Legend */
+        .legend {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+
+        /* Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .zoom-btn {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .zoom-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--gsu-blue-light);
+            transform: scale(1.05);
+        }
+
+        /* --- ARRAY REPRESENTATION --- */
+        #array-container {
+            height: 140px;
+            min-height: 140px;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+            padding: 20px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .array-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .array-box {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 30px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--glass-border) transparent;
+        }
+        .array-box::-webkit-scrollbar { height: 6px; }
+        .array-box::-webkit-scrollbar-track { background: transparent; }
+        .array-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        .array-cell {
+            min-width: 44px;
+            height: 44px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            position: relative;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        .array-cell span.idx {
+            position: absolute;
+            bottom: -20px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+        .array-cell.active {
+            background: rgba(204, 0, 0, 0.2);
+            border-color: #CC0000;
+            box-shadow: 0 0 15px rgba(204, 0, 0, 0.3);
+        }
+        .array-cell.highlight {
+            background: rgba(40, 167, 69, 0.2);
+            border-color: #28a745;
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.3);
+        }
+
+        /* Status Message */
+        .status-message {
+            position: fixed;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--gsu-blue-light);
+            color: var(--gsu-blue-light);
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .status-message.show { opacity: 1; }
+
     </style>
 </head>
 <body>
-    <h1>Stack</h1>
-    <p>Visualization coming soon...</p>
-    <a href="../../index.html">← Back to Navigation</a>
+
+    <div class="aura-container">
+        <div class="aura-blob blob-1"></div>
+        <div class="aura-blob blob-2"></div>
+        <div class="aura-blob blob-3"></div>
+    </div>
+
+    <div class="main-glass-card">
+        <header>
+            <div class="header-left">
+                <a href="#" class="back-btn" onclick="window.parent.closeIframe(); return false;">← Back</a>
+                <h1><i class="fa-solid fa-layer-group" style="margin-right: 12px; color: var(--gsu-blue-light);"></i>Stack</h1>
+            </div>
+            
+            <div class="controls-toolbar">
+                <div class="control-group">
+                    <input type="number" id="numInput" placeholder="Value" onkeypress="handleEnter(event)">
+                    <button class="primary" onclick="handlePush()">Push</button>
+                    <button onclick="handlePop()">Pop</button>
+                    <button onclick="handlePeek()">Peek</button>
+                </div>
+                
+                <div class="control-group">
+                    <button class="danger" onclick="handleClear()">Clear</button>
+                </div>
+            </div>
+        </header>
+
+        <div id="canvas-wrapper">
+            <canvas id="stackCanvas"></canvas>
+
+            <div class="legend">
+                <div class="legend-item"><div class="dot" style="color: var(--node-normal); background: currentColor;"></div>Normal</div>
+                <div class="legend-item"><div class="dot" style="color: var(--node-active); background: currentColor;"></div>Popped</div>
+                <div class="legend-item"><div class="dot" style="color: var(--node-success); background: currentColor;"></div>Peek Top</div>
+            </div>
+
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()">+</button>
+                <button class="zoom-btn" onclick="zoomOut()">−</button>
+                <button class="zoom-btn" onclick="resetView()">↺</button>
+            </div>
+        </div>
+
+        <div id="array-container">
+            <div class="array-label">Array Memory (Index 0 is Bottom)</div>
+            <div class="array-box" id="arrayVisual"></div>
+        </div>
+    </div>
+
+    <div class="status-message" id="statusMessage"></div>
+
+<script>
+    // --- Configuration ---
+    const style = getComputedStyle(document.body);
+    const COLORS = {
+        normal: style.getPropertyValue('--node-normal').trim(),
+        active: style.getPropertyValue('--node-active').trim(),
+        success: style.getPropertyValue('--node-success').trim()
+    };
+
+    const canvas = document.getElementById('stackCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Stack Visual Config
+    const NODE_WIDTH = 200;
+    const NODE_HEIGHT = 50;
+    const CONTAINER_PADDING = 20;
+    const MAX_STACK_SIZE = 12; // Prevent visual overflow
+
+    let stack = [];
+    let animationQueue = [];
+    let isAnimating = false;
+
+    // Camera Controls (Pan & Zoom)
+    let offsetX = 0;
+    let offsetY = 0;
+    let scale = 1;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let lastOffsetX = 0;
+    let lastOffsetY = 0;
+
+    function resizeCanvas() {
+        const wrapper = document.getElementById('canvas-wrapper');
+        canvas.width = wrapper.offsetWidth;
+        canvas.height = wrapper.offsetHeight;
+        if (!isAnimating) drawStack(null);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    setTimeout(resizeCanvas, 100);
+
+    // --- Camera Controls: Pan & Zoom ---
+    canvas.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        lastOffsetX = offsetX;
+        lastOffsetY = offsetY;
+        canvas.style.cursor = 'grabbing';
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            const dx = e.clientX - dragStartX;
+            const dy = e.clientY - dragStartY;
+            offsetX = lastOffsetX + dx;
+            offsetY = lastOffsetY + dy;
+            if (!isAnimating) drawStack(null);
+        }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        isDragging = false;
+        canvas.style.cursor = 'grab';
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+        isDragging = false;
+        canvas.style.cursor = 'grab';
+    });
+
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        const wheel = e.deltaY < 0 ? 1 : -1;
+        const newScale = Math.min(Math.max(scale * Math.exp(wheel * 0.1), 0.5), 3);
+        const scaleChange = newScale / scale;
+        offsetX = mouseX - (mouseX - offsetX) * scaleChange;
+        offsetY = mouseY - (mouseY - offsetY) * scaleChange;
+        scale = newScale;
+        if (!isAnimating) drawStack(null);
+    });
+
+    // Set initial cursor
+    canvas.style.cursor = 'grab';
+
+    // --- Logic ---
+
+    function push(value) {
+        if (stack.length >= MAX_STACK_SIZE) {
+            showStatus("Stack Overflow! (Visual Limit Reached)");
+            return;
+        }
+        const val = parseInt(value);
+        if (isNaN(val)) return;
+
+        animationQueue = [];
+        
+        // 1. Spawn Step: Prepare to drop
+        animationQueue.push({ 
+            type: 'spawn', 
+            stackSnapshot: [...stack], // Old stack
+            newValue: val
+        });
+
+        // 2. Add to logical stack
+        stack.push(val);
+
+        // 3. Landed Step
+        animationQueue.push({ 
+            type: 'land', 
+            stackSnapshot: [...stack],
+            targetIndex: stack.length - 1
+        });
+
+        runAnimation();
+    }
+
+    function pop() {
+        if (stack.length === 0) {
+            showStatus("Stack Underflow! (Stack is empty)");
+            return;
+        }
+
+        animationQueue = [];
+        const topIdx = stack.length - 1;
+
+        // 1. Highlight Top
+        animationQueue.push({
+            type: 'highlight-pop',
+            stackSnapshot: [...stack],
+            targetIndex: topIdx
+        });
+
+        // 2. Float Away
+        animationQueue.push({
+            type: 'float-out',
+            stackSnapshot: [...stack],
+            targetIndex: topIdx,
+            poppedValue: stack[topIdx]
+        });
+
+        // 3. Finalize
+        stack.pop();
+        animationQueue.push({
+            type: 'idle',
+            stackSnapshot: [...stack]
+        });
+
+        runAnimation();
+    }
+
+    function peek() {
+        if (stack.length === 0) {
+            showStatus("Stack is empty");
+            return;
+        }
+        animationQueue = [];
+        animationQueue.push({
+            type: 'peek',
+            stackSnapshot: [...stack],
+            targetIndex: stack.length - 1
+        });
+        animationQueue.push({ type: 'idle', stackSnapshot: [...stack] }); // Return to normal
+        runAnimation();
+    }
+
+    // --- Animation Engine ---
+    function runAnimation() {
+        if (isAnimating || animationQueue.length === 0) return;
+        isAnimating = true;
+        disableControls(true);
+        let stepIndex = 0;
+
+        const process = () => {
+            if (stepIndex >= animationQueue.length) {
+                isAnimating = false;
+                disableControls(false);
+                drawStack(null);
+                drawArray(null);
+                return;
+            }
+            const step = animationQueue[stepIndex++];
+            let duration = 600;
+
+            if (step.type === 'peek') {
+                showStatus(`Top Value: ${step.stackSnapshot[step.targetIndex]}`);
+                duration = 1500;
+            }
+            
+            drawArray(step);
+
+            if (step.type === 'spawn') {
+                // Drop Animation
+                const startTime = performance.now();
+                const startY = 50; // Top of canvas
+                const endY = getStackBottomY() - (step.stackSnapshot.length * NODE_HEIGHT);
+                
+                const animateDrop = (time) => {
+                    let progress = (time - startTime) / duration;
+                    if (progress > 1) progress = 1;
+                    const ease = t => t * (2 - t); // Ease out
+                    
+                    const currentY = startY + (endY - startY) * ease(progress);
+                    
+                    drawStack(step, { 
+                        val: step.newValue, 
+                        y: currentY, 
+                        opacity: progress 
+                    });
+
+                    if (progress < 1) requestAnimationFrame(animateDrop);
+                    else process();
+                };
+                requestAnimationFrame(animateDrop);
+
+            } else if (step.type === 'float-out') {
+                // Pop Animation
+                const startTime = performance.now();
+                const startY = getStackBottomY() - (step.targetIndex * NODE_HEIGHT);
+                const endY = startY - 150; // Float up 150px
+                
+                const animatePop = (time) => {
+                    let progress = (time - startTime) / duration;
+                    if (progress > 1) progress = 1;
+                    
+                    const currentY = startY + (endY - startY) * progress;
+                    
+                    drawStack(step, { 
+                        val: step.poppedValue, 
+                        y: currentY, 
+                        opacity: 1 - progress, // Fade out
+                        color: COLORS.active
+                    });
+
+                    if (progress < 1) requestAnimationFrame(animatePop);
+                    else process();
+                };
+                requestAnimationFrame(animatePop);
+
+            } else {
+                drawStack(step);
+                setTimeout(process, duration);
+            }
+        };
+        process();
+    }
+
+    // --- Drawing ---
+    function getStackBottomY() {
+        return canvas.height - 50;
+    }
+
+    function drawRoundRect(ctx, x, y, width, height, radius, fillStyle, strokeStyle) {
+        ctx.beginPath();
+        ctx.roundRect(x, y, width, height, radius);
+        
+        // Gradient for 3D effect
+        const grad = ctx.createLinearGradient(x, y, x, y + height);
+        grad.addColorStop(0, adjustColor(fillStyle, 40));
+        grad.addColorStop(0.5, fillStyle);
+        grad.addColorStop(1, adjustColor(fillStyle, -20));
+        
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.strokeStyle = strokeStyle || 'rgba(255,255,255,0.8)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Shine on top
+        ctx.beginPath();
+        ctx.ellipse(x + width/2, y + 8, width/2 - 10, 4, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fill();
+    }
+
+    // Helper to lighten/darken hex color
+    function adjustColor(color, amount) {
+        return color; // Simplification for canvas gradient compatibility, or use proper lib
+    }
+
+    function drawStack(step, movingNode = null) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Apply camera transformations
+        ctx.save();
+        ctx.translate(offsetX, offsetY);
+        ctx.scale(scale, scale);
+
+        const centerX = canvas.width / 2;
+        const bottomY = getStackBottomY();
+        const data = step ? step.stackSnapshot : stack;
+
+        // 1. Draw Container (Glass Tube)
+        ctx.save();
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.2)';
+        ctx.shadowBlur = 10;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 4;
+        
+        const tubeWidth = NODE_WIDTH + CONTAINER_PADDING;
+        const tubeHeight = (MAX_STACK_SIZE * NODE_HEIGHT) + 20;
+        
+        ctx.beginPath();
+        ctx.moveTo(centerX - tubeWidth/2, bottomY - tubeHeight);
+        ctx.lineTo(centerX - tubeWidth/2, bottomY + 10);
+        ctx.arc(centerX, bottomY + 10, tubeWidth/2, Math.PI, 0, true); // Curved bottom
+        ctx.lineTo(centerX + tubeWidth/2, bottomY - tubeHeight);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Draw Static Nodes
+        data.forEach((val, i) => {
+            // If this node is currently moving (popping), skip drawing it here
+            if (movingNode && step.type === 'float-out' && i === step.targetIndex) return;
+
+            let x = centerX - NODE_WIDTH / 2;
+            let y = bottomY - (i + 1) * NODE_HEIGHT;
+            let color = COLORS.normal;
+
+            if (step) {
+                if (step.type === 'highlight-pop' && i === step.targetIndex) color = COLORS.active;
+                if (step.type === 'peek' && i === step.targetIndex) color = COLORS.success;
+            }
+
+            drawRoundRect(ctx, x, y, NODE_WIDTH, NODE_HEIGHT - 5, 10, color);
+
+            // Text
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 16px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(val, centerX, y + (NODE_HEIGHT-5)/2);
+        });
+
+        // 3. Draw Moving Node (Spawn or Pop)
+        if (movingNode) {
+            ctx.save();
+            ctx.globalAlpha = movingNode.opacity;
+            let x = centerX - NODE_WIDTH / 2;
+            let color = movingNode.color || COLORS.normal;
+            
+            drawRoundRect(ctx, x, movingNode.y, NODE_WIDTH, NODE_HEIGHT - 5, 10, color);
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 16px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(movingNode.val, centerX, movingNode.y + (NODE_HEIGHT-5)/2);
+            ctx.restore();
+        }
+
+        // Restore camera transformations
+        ctx.restore();
+    }
+
+    function drawArray(step) {
+        const div = document.getElementById('arrayVisual');
+        div.innerHTML = '';
+        const data = step ? step.stackSnapshot : stack;
+        
+        data.forEach((val, i) => {
+            const cell = document.createElement('div');
+            cell.className = 'array-cell';
+            cell.innerHTML = `${val}<span class="idx">${i}</span>`;
+            
+            if (step) {
+                if (step.type === 'highlight-pop' && i === step.targetIndex) cell.classList.add('active');
+                if (step.type === 'peek' && i === step.targetIndex) cell.classList.add('highlight');
+            }
+            div.appendChild(cell);
+        });
+    }
+
+    // --- UI Helpers ---
+    function handlePush() {
+        const inp = document.getElementById('numInput');
+        if (inp.value === '') return;
+        push(inp.value);
+        inp.value = '';
+        inp.focus();
+    }
+    function handlePop() { pop(); }
+    function handlePeek() { peek(); }
+    function handleClear() { 
+        stack = []; 
+        animationQueue = []; 
+        drawStack(null); 
+        drawArray(null); 
+        showStatus("Cleared"); 
+    }
+    function handleEnter(e) { if(e.key === 'Enter') handlePush(); }
+    
+    function disableControls(dis) {
+        document.querySelectorAll('button:not(.zoom-btn)').forEach(b => b.disabled = dis);
+        document.querySelectorAll('input').forEach(i => i.disabled = dis);
+    }
+
+    function showStatus(msg) {
+        const el = document.getElementById('statusMessage');
+        el.textContent = msg;
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 2000);
+    }
+
+    // Camera control functions
+    function zoomIn() {
+        scale = Math.min(scale * 1.2, 3);
+        drawStack(null);
+    }
+
+    function zoomOut() {
+        scale = Math.max(scale / 1.2, 0.5);
+        drawStack(null);
+    }
+
+    function resetView() {
+        offsetX = 0;
+        offsetY = 0;
+        scale = 1;
+        drawStack(null);
+    }
+
+    // Init
+    drawStack(null);
+    showStatus("Ready");
+</script>
 </body>
 </html>
