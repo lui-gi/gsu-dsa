@@ -41,7 +41,7 @@ The application currently supports visualizations for the following data structu
 * **Topological Sort:** Directed Acyclic Graph (DAG) ordering.
 * **Dijkstra's Algorithm:** Shortest path visualization.
 
-## 📄 License
+##  License
 
 This project is open-source and available under the [MIT License](https://github.com/lui-gi/gsu-dsa/blob/main/LICENSE).
 
