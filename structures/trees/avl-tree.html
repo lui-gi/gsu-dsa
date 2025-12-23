@@ -321,9 +321,8 @@
 
             <div class="legend">
                 <div class="legend-item"><div class="dot" style="color: var(--node-normal); background: currentColor;"></div>Balanced</div>
-                <div class="legend-item"><div class="dot" style="color: var(--node-imbalance); background: currentColor;"></div>Imbalanced (BF ±2)</div>
-                <div class="legend-item"><div class="dot" style="color: var(--node-compare); background: currentColor;"></div>Compare/Pivot</div>
-                <div class="legend-item"><div class="dot" style="color: var(--node-success); background: currentColor;"></div>Found/Inserted</div>
+                <div class="legend-item"><div class="dot" style="color: var(--node-imbalance); background: currentColor;"></div>Rotating/Imbalanced</div>
+                <div class="legend-item"><div class="dot" style="color: var(--node-success); background: currentColor;"></div>Inserted/Success</div>
             </div>
 
             <div class="zoom-controls">
@@ -465,66 +464,102 @@
     function handleInsert() {
         const val = getVal(); if(val===null) return;
         animationQueue = [];
-        
-        // Internal Recursive Insert that returns new root
-        const insertRec = (node, v) => {
-            // 1. Standard BST Insert
-            if(!node) {
-                const newNode = new AVLNode(v);
-                animationQueue.push({ type: 'spawn', treeSnapshot: cloneTree(root), targetVal: v, msg: `Insert ${v}` });
-                return newNode;
-            }
 
-            animationQueue.push({ type: 'compare', treeSnapshot: cloneTree(root), target: node, msg: `Compare ${v} with ${node.val}` });
-
-            if(v < node.val) node.left = insertRec(node.left, v);
-            else if(v > node.val) node.right = insertRec(node.right, v);
+        // Step 1: Perform BST insertion without rotation
+        const insertBST = (node, v) => {
+            if(!node) return new AVLNode(v);
+            if(v < node.val) node.left = insertBST(node.left, v);
+            else if(v > node.val) node.right = insertBST(node.right, v);
             else return node; // No duplicates
-
-            // 2. Update Height
             updateHeight(node);
+            return node;
+        };
 
-            // 3. Get Balance
+        // If root is null, special case
+        if(!root) {
+            root = new AVLNode(val);
+            updatePositions(root);
+            animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), target: root, msg: `Inserted ${val}` });
+            runAnimation();
+            return;
+        }
+
+        // Perform BST insertion first
+        root = insertBST(root, val);
+        updatePositions(root);
+
+        // Show the inserted node in BST position (before any rotation)
+        const findNode = (node, v) => {
+            if(!node || node.val === v) return node;
+            if(v < node.val) return findNode(node.left, v);
+            return findNode(node.right, v);
+        };
+        const insertedNode = findNode(root, val);
+        animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), target: insertedNode, msg: `Inserted ${val} (BST position)` });
+
+        // Step 2: Now perform rebalancing with rotations
+        const rebalance = (node, v) => {
+            if(!node) return node;
+
+            // Recursively rebalance children first
+            if(v < node.val) node.left = rebalance(node.left, v);
+            else if(v > node.val) node.right = rebalance(node.right, v);
+
+            updateHeight(node);
             const balance = getBalance(node);
 
-            // 4. Check Unbalanced
+            // Check if unbalanced
             if(balance > 1 || balance < -1) {
                 animationQueue.push({ type: 'imbalance', treeSnapshot: cloneTree(root), target: node, msg: `Imbalance at ${node.val} (BF: ${balance})` });
-            }
 
-            // Left Left Case
-            if(balance > 1 && v < node.left.val) {
-                return rightRotate(node);
-            }
-            // Right Right Case
-            if(balance < -1 && v > node.right.val) {
-                return leftRotate(node);
-            }
-            // Left Right Case
-            if(balance > 1 && v > node.left.val) {
-                node.left = leftRotate(node.left);
-                return rightRotate(node);
-            }
-            // Right Left Case
-            if(balance < -1 && v < node.right.val) {
-                node.right = rightRotate(node.right);
-                return leftRotate(node);
+                // Left Left Case
+                if(balance > 1 && v < node.left.val) {
+                    animationQueue.push({ type: 'rotate', treeSnapshot: cloneTree(root), target: node, msg: `Right rotation at ${node.val}` });
+                    node = rightRotate(node);
+                    updatePositions(root);
+                    animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), msg: 'Rotation complete' });
+                }
+                // Right Right Case
+                else if(balance < -1 && v > node.right.val) {
+                    animationQueue.push({ type: 'rotate', treeSnapshot: cloneTree(root), target: node, msg: `Left rotation at ${node.val}` });
+                    node = leftRotate(node);
+                    updatePositions(root);
+                    animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), msg: 'Rotation complete' });
+                }
+                // Left Right Case
+                else if(balance > 1 && v > node.left.val) {
+                    animationQueue.push({ type: 'rotate', treeSnapshot: cloneTree(root), target: node.left, msg: `Left-Right: Left rotation at ${node.left.val}` });
+                    node.left = leftRotate(node.left);
+                    updatePositions(root);
+                    animationQueue.push({ type: 'imbalance', treeSnapshot: cloneTree(root), target: node, msg: `Right rotation at ${node.val}` });
+                    node = rightRotate(node);
+                    updatePositions(root);
+                    animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), msg: 'Double rotation complete' });
+                }
+                // Right Left Case
+                else if(balance < -1 && v < node.right.val) {
+                    animationQueue.push({ type: 'rotate', treeSnapshot: cloneTree(root), target: node.right, msg: `Right-Left: Right rotation at ${node.right.val}` });
+                    node.right = rightRotate(node.right);
+                    updatePositions(root);
+                    animationQueue.push({ type: 'imbalance', treeSnapshot: cloneTree(root), target: node, msg: `Left rotation at ${node.val}` });
+                    node = leftRotate(node);
+                    updatePositions(root);
+                    animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), msg: 'Double rotation complete' });
+                }
             }
 
             return node;
         };
 
-        // If root is null, special case to set it immediately for visual
-        if(!root) {
-            root = new AVLNode(val);
-            updatePositions(root);
-            animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), target: root });
-        } else {
-            root = insertRec(root, val);
-            updatePositions(root);
-            animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), msg: "Balanced & Inserted" });
+        root = rebalance(root, val);
+        updatePositions(root);
+
+        // Final balanced state
+        if(animationQueue.length === 1) {
+            // No rotations needed, just show success
+            animationQueue.push({ type: 'idle', treeSnapshot: cloneTree(root), msg: 'Tree is balanced' });
         }
-        
+
         runAnimation();
     }
 
@@ -629,11 +664,13 @@
             if(step.msg) showStatus(step.msg);
 
             drawTree(step);
-            
-            // Adjust speed: fast for comparisons, slow for imbalances/rotations
-            let delay = 400;
-            if(step.type === 'imbalance') delay = 800;
-            if(step.type === 'compare') delay = 300;
+
+            // Adjust speed: emphasize rotations (concept-focused)
+            let delay = 500;
+            if(step.type === 'rotate') delay = 1000;  // Slow down rotations to highlight them
+            if(step.type === 'imbalance') delay = 900;
+            if(step.type === 'success') delay = 600;
+            if(step.type === 'compare') delay = 200;
             
             setTimeout(process, delay);
         };
@@ -678,7 +715,7 @@
             if(step && step.target && node.x === step.target.x && node.y === step.target.y) {
                  if(step.type === 'compare') color = COLORS.compare;
                  if(step.type === 'success' || step.type === 'spawn') color = COLORS.success;
-                 if(step.type === 'imbalance') color = COLORS.imbalance;
+                 if(step.type === 'imbalance' || step.type === 'rotate') color = COLORS.imbalance;
             }
 
             ctx.beginPath();
