@@ -186,13 +186,60 @@ body, html {
     text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
     letter-spacing: 3px;
 }
-#help {
+/* Navigation Guide Box - Bottom Right */
+#nav-guide {
     position: absolute;
     bottom: 40px;
-    left: 40px;
-    font-size: 18px;
+    right: 40px;
+
+    /* Glass morphism - subtle variant for homepage */
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+
+    /* Spacing */
+    padding: 12px 20px;
+
+    /* Visual depth */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+
+    /* Layout */
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    /* Interaction states */
     opacity: 0.8;
     transition: opacity 0.3s;
+}
+
+#nav-guide:hover {
+    opacity: 1;
+}
+
+.nav-guide-label {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.nav-guide-icons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-guide-icons i {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.85);
+    transition: color 0.2s;
+}
+
+.nav-guide-enter {
+    margin-left: 6px; /* Visual separation from arrow keys */
 }
 
 /* IFRAME CONTAINER */
@@ -232,7 +279,7 @@ body, html {
 /* Hide navigation when iframe is open */
 body.split-view #category-row,
 body.split-view #clock,
-body.split-view #help,
+body.split-view #nav-guide,
 body.split-view .wave {
     opacity: 0;
     pointer-events: none;
