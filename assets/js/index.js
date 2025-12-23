@@ -109,6 +109,19 @@ function render() {
             updatePos();
         });
 
+        // Add hover listeners for non-active categories
+        icon.addEventListener('mouseenter', () => {
+            if (cIdx !== currentCat) {
+                group.classList.add('hovered');
+            }
+        });
+
+        icon.addEventListener('mouseleave', () => {
+            if (cIdx !== currentCat) {
+                group.classList.remove('hovered');
+            }
+        });
+
         const col = document.createElement('div');
         col.className = 'item-col';
         col.id = `col-${cIdx}`;
@@ -150,6 +163,10 @@ function updatePos() {
     // Category Classes
     menuData.forEach((_, i) => {
         const grp = document.getElementById(`cat-${i}`);
+
+        // Clean up hover state on all categories
+        grp.classList.remove('hovered');
+
         if (i === currentCat) {
             grp.classList.add('active');
             grp.classList.remove('inactive');

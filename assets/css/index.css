@@ -112,6 +112,22 @@ body, html {
 }
 .category-group.active .cat-label { opacity: 1; }
 
+/* HOVER STATE - Only applies to inactive categories */
+.category-group.inactive.hovered .cat-icon {
+    opacity: 0.85;
+    transform: scale(0.95);
+    background: rgba(255,255,255,0.85);
+}
+
+.category-group.inactive.hovered .cat-label {
+    opacity: 1;
+}
+
+/* Explicitly ensure items stay hidden on hover */
+.category-group.inactive.hovered .item-col {
+    opacity: 0;
+}
+
 /* VERTICAL AXIS */
 .item-col {
     display: flex;
