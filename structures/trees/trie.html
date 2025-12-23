@@ -3,40 +3,812 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trie - gsu dsa</title>
+    <title>Trie (Prefix Tree) - gsu dsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
+        :root {
+            --gsu-blue: #0039A6;
+            --gsu-blue-light: #4d8dff;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            
+            /* Node Colors */
+            --node-empty: rgba(255, 255, 255, 0.1);
+            --node-path: #0039A6;
+            --node-end: #28a745;      /* Green for End of Word */
+            --node-process: #ffc107;  /* Gold for processing/searching */
+            --node-error: #ff4757;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #000c24;
+            color: var(--text-main);
             height: 100vh;
-            background: radial-gradient(circle at top right, #0055CC, #001F5C);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            color: white;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            text-align: center;
+            padding: 20px;
         }
+
+        /* --- BACKGROUND AURA --- */
+        .aura-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .aura-blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+        .blob-1 { background: var(--gsu-blue); width: 700px; height: 700px; top: -10%; left: -10%; animation-duration: 25s; }
+        .blob-2 { background: #0055CC; width: 600px; height: 600px; bottom: -10%; right: -20%; animation-delay: -5s; animation-duration: 30s; }
+        .blob-3 { background: #001F5C; width: 800px; height: 800px; bottom: -20%; left: 20%; opacity: 0.8; animation-delay: -10s; }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 50px) scale(1.1); }
+            100% { transform: translate(-30px, -20px) scale(0.9); }
+        }
+
+        /* --- MAIN GLASS CONTAINER --- */
+        .main-glass-card {
+            width: 100%;
+            max-width: 1600px;
+            height: 95vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        /* --- HEADER & CONTROLS --- */
+        header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+            z-index: 20;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        
         h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
         }
-        p {
-            font-size: 18px;
-            opacity: 0.8;
+
+        .back-btn {
+            color: var(--gsu-blue-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.2s;
         }
-        a {
+        .back-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--text-muted); }
+
+        .controls-toolbar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding-left: 12px;
+            border-left: 1px solid var(--glass-border);
+        }
+        .control-group:first-child { border-left: none; padding-left: 0; }
+
+        input[type="text"] {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
             color: white;
-            text-decoration: underline;
-            margin-top: 20px;
-            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            width: 140px;
+            outline: none;
+            transition: border-color 0.2s;
+            text-transform: lowercase;
         }
+        input:focus { border-color: var(--gsu-blue-light); }
+
+        button {
+            background: rgba(255,255,255,0.08);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-1px);
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        button.primary { background: var(--gsu-blue); border-color: var(--gsu-blue); }
+        button.primary:hover { background: #004BC9; }
+
+        button.danger {
+            background: rgba(204, 0, 0, 0.2);
+            border-color: rgba(204, 0, 0, 0.4);
+            color: #ff6b6b;
+        }
+        button.danger:hover { background: rgba(204, 0, 0, 0.3); border-color: #ff6b6b; }
+
+        /* --- CANVAS AREA --- */
+        #canvas-wrapper {
+            flex-grow: 1;
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            overflow: hidden;
+            cursor: grab;
+            z-index: 1;
+        }
+        #canvas-wrapper:active { cursor: grabbing; }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .zoom-btn {
+            width: 40px; height: 40px; padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            background: rgba(15, 23, 42, 0.8);
+            border-color: var(--glass-border);
+            border-radius: 10px;
+        }
+        .zoom-btn:hover { background: rgba(255,255,255,0.1); }
+
+        .legend {
+            position: absolute;
+            top: 20px; left: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+
+        .status-message {
+            position: absolute;
+            top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--gsu-blue-light);
+            color: var(--gsu-blue-light);
+            padding: 10px 24px; border-radius: 20px;
+            font-size: 14px; pointer-events: none;
+            opacity: 0; transition: opacity 0.3s;
+            z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .status-message.show { opacity: 1; }
+
+        /* --- BOTTOM PANEL (Dictionary View) --- */
+        #bottom-panel {
+            height: 160px;
+            min-height: 160px;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+            padding: 15px 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .panel-header {
+            font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        .word-list {
+            flex-grow: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .word-chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 13px;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .word-chip:hover {
+            background: rgba(0, 57, 166, 0.3);
+            border-color: var(--gsu-blue-light);
+            transform: translateY(-1px);
+        }
+        .word-chip i { font-size: 10px; color: var(--text-muted); cursor: pointer; }
+        .word-chip i:hover { color: #ff6b6b; }
+
+        .empty-state {
+            width: 100%; height: 100%; display: flex; 
+            align-items: center; justify-content: center;
+            font-style: italic; color: rgba(255,255,255,0.2);
+        }
+
     </style>
 </head>
 <body>
-    <h1>Trie</h1>
-    <p>Visualization coming soon...</p>
-    <a href="../../index.html">← Back to Navigation</a>
+
+    <div class="aura-container">
+        <div class="aura-blob blob-1"></div>
+        <div class="aura-blob blob-2"></div>
+        <div class="aura-blob blob-3"></div>
+    </div>
+
+    <div class="main-glass-card">
+        <header>
+            <div class="header-left">
+                <a href="#" class="back-btn" onclick="window.parent.closeIframe(); return false;">← Back</a>
+                <h1><i class="fa-solid fa-network-wired" style="margin-right: 12px; color: var(--gsu-blue-light);"></i>Trie (Prefix Tree)</h1>
+            </div>
+            
+            <div class="controls-toolbar">
+                <div class="control-group">
+                    <input type="text" id="textInput" placeholder="word (a-z)" onkeypress="handleEnter(event)" maxlength="15">
+                    <button class="primary" onclick="handleInsert()">Insert</button>
+                    <button class="danger" onclick="handleDelete()">Delete</button>
+                </div>
+
+                <div class="control-group">
+                    <button onclick="handleSearch()">Search</button>
+                    <button onclick="handleStartsWith()">Starts With</button>
+                </div>
+                
+                <div class="control-group">
+                    <button onclick="handleRandom()">Random Set</button>
+                    <button onclick="handleClear()">Clear</button>
+                </div>
+            </div>
+        </header>
+
+        <div id="canvas-wrapper">
+            <canvas id="trieCanvas"></canvas>
+
+            <div class="status-message" id="statusMessage"></div>
+
+            <div class="legend">
+                <div class="legend-item"><div class="dot" style="background: var(--node-empty); border: 1px solid rgba(255,255,255,0.3);"></div>Node</div>
+                <div class="legend-item"><div class="dot" style="background: var(--node-end);"></div>End of Word</div>
+                <div class="legend-item"><div class="dot" style="background: var(--node-process);"></div>Processing</div>
+            </div>
+
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()"><i class="fa-solid fa-plus"></i></button>
+                <button class="zoom-btn" onclick="zoomOut()"><i class="fa-solid fa-minus"></i></button>
+                <button class="zoom-btn" onclick="resetView()"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+        </div>
+
+        <div id="bottom-panel">
+            <div class="panel-header">
+                <span>Dictionary Content</span>
+                <span id="wordCountBadge" style="opacity: 0.6">0 Words</span>
+            </div>
+            <div class="word-list" id="dictionaryList">
+                <div class="empty-state">Tree is empty</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const style = getComputedStyle(document.body);
+    const COLORS = {
+        empty: 'rgba(255, 255, 255, 0.1)',
+        border: 'rgba(255, 255, 255, 0.4)',
+        path: style.getPropertyValue('--node-path').trim(),
+        end: style.getPropertyValue('--node-end').trim(),
+        process: style.getPropertyValue('--node-process').trim(),
+        error: style.getPropertyValue('--node-error').trim(),
+        text: '#ffffff'
+    };
+
+    const canvas = document.getElementById('trieCanvas');
+    const ctx = canvas.getContext('2d');
+    const NODE_RADIUS = 20;
+    const VERTICAL_SPACING = 70;
+    const MIN_NODE_SPACING = 50;
+
+    // --- Data Structure ---
+    class TrieNode {
+        constructor(char) {
+            this.char = char;
+            this.children = {}; // Map char -> TrieNode
+            this.isEndOfWord = false;
+            
+            // Visual Props
+            this.x = 0;
+            this.y = 0;
+            this.width = 0; // Subtree width
+            this.id = Math.random().toString(36).substr(2, 9); // Unique ID for finding in animations
+        }
+    }
+
+    let root = new TrieNode('*');
+    let animationQueue = [];
+    let isAnimating = false;
+    
+    // Camera
+    let offsetX = 0, offsetY = 0, scale = 1;
+    let isDragging = false, dragStartX = 0, dragStartY = 0, lastOffsetX = 0, lastOffsetY = 0;
+
+    // --- Init ---
+    function resizeCanvas() {
+        const wrapper = document.getElementById('canvas-wrapper');
+        canvas.width = wrapper.offsetWidth;
+        canvas.height = wrapper.offsetHeight;
+        if(!isAnimating) drawTrie(null);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    setTimeout(resizeCanvas, 100);
+
+    // --- Camera Controls ---
+    canvas.addEventListener('mousedown', e => { isDragging=true; dragStartX=e.clientX; dragStartY=e.clientY; lastOffsetX=offsetX; lastOffsetY=offsetY; canvas.style.cursor='grabbing'; });
+    canvas.addEventListener('mousemove', e => { if(isDragging) { offsetX=lastOffsetX+(e.clientX-dragStartX); offsetY=lastOffsetY+(e.clientY-dragStartY); if(!isAnimating) drawTrie(null); } });
+    canvas.addEventListener('mouseup', () => { isDragging=false; canvas.style.cursor='grab'; });
+    canvas.addEventListener('wheel', e => { e.preventDefault(); const s = e.deltaY < 0 ? 1.1 : 0.9; scale = Math.min(Math.max(scale*s, 0.1), 3); if(!isAnimating) drawTrie(null); });
+
+    // --- Layout Logic (Recursive Width) ---
+    function updateLayout(node, depth=0) {
+        if(!node) return 0;
+        
+        const childKeys = Object.keys(node.children).sort();
+        
+        // Base case: Leaf
+        if (childKeys.length === 0) {
+            node.width = MIN_NODE_SPACING;
+            return node.width;
+        }
+
+        // Recursive Step
+        let totalWidth = 0;
+        childKeys.forEach(key => {
+            totalWidth += updateLayout(node.children[key], depth + 1);
+        });
+
+        // Ensure parent is at least as wide as minimum spacing, but practically acts as sum
+        node.width = Math.max(MIN_NODE_SPACING, totalWidth);
+        return node.width;
+    }
+
+    function assignCoordinates(node, x, y) {
+        if(!node) return;
+        node.x = x;
+        node.y = y;
+
+        const childKeys = Object.keys(node.children).sort();
+        let currentX = x - node.width / 2;
+
+        childKeys.forEach(key => {
+            const child = node.children[key];
+            // Center the child within its allocated slice
+            const childX = currentX + child.width / 2;
+            assignCoordinates(child, childX, y + VERTICAL_SPACING);
+            currentX += child.width;
+        });
+    }
+
+    function recalculateTree() {
+        updateLayout(root);
+        // Start root at center of layout space
+        assignCoordinates(root, 0, 80);
+    }
+
+    function cloneTrie(node) {
+        if(!node) return null;
+        const copy = new TrieNode(node.char);
+        copy.isEndOfWord = node.isEndOfWord;
+        copy.x = node.x; copy.y = node.y; copy.width = node.width; copy.id = node.id;
+        
+        Object.keys(node.children).forEach(key => {
+            copy.children[key] = cloneTrie(node.children[key]);
+        });
+        return copy;
+    }
+
+    // --- Dictionary View ---
+    function updateDictionaryView() {
+        const list = document.getElementById('dictionaryList');
+        list.innerHTML = '';
+        
+        let words = [];
+        const dfs = (node, prefix) => {
+            if(node.isEndOfWord) words.push(prefix);
+            Object.keys(node.children).sort().forEach(char => {
+                dfs(node.children[char], prefix + char);
+            });
+        };
+        
+        // Skip root '*' char
+        Object.keys(root.children).sort().forEach(char => {
+            dfs(root.children[char], char);
+        });
+
+        document.getElementById('wordCountBadge').innerText = `${words.length} Words`;
+
+        if(words.length === 0) {
+            list.innerHTML = '<div class="empty-state">Tree is empty</div>';
+            return;
+        }
+
+        words.forEach(w => {
+            const chip = document.createElement('div');
+            chip.className = 'word-chip';
+            chip.innerHTML = `${w} <i class="fa-solid fa-xmark" onclick="directDelete('${w}')"></i>`;
+            list.appendChild(chip);
+        });
+    }
+
+    // --- Operations ---
+
+    function handleInsert() {
+        const input = getInput(); if(!input) return;
+        animationQueue = [];
+        
+        let curr = root;
+        // Step 1: Traverse existing or create new
+        for(let i=0; i<input.length; i++) {
+            const char = input[i];
+            
+            // Log logic for creating/visiting
+            let isNew = false;
+            if(!curr.children[char]) {
+                curr.children[char] = new TrieNode(char);
+                isNew = true;
+            }
+            
+            const nextNode = curr.children[char];
+            
+            // Recalculate layout if we added a node
+            if(isNew) recalculateTree();
+
+            // Snapshot
+            animationQueue.push({ 
+                type: 'visit', 
+                treeSnapshot: cloneTrie(root), 
+                targetId: nextNode.id, 
+                msg: isNew ? `Creating node '${char}'` : `Following path '${char}'`
+            });
+            
+            curr = nextNode;
+        }
+
+        // Step 2: Mark End
+        curr.isEndOfWord = true;
+        animationQueue.push({ 
+            type: 'success', 
+            treeSnapshot: cloneTrie(root), 
+            targetId: curr.id, 
+            msg: `Marked end of word '${input}'`
+        });
+        
+        runAnimation();
+    }
+
+    function handleSearch() {
+        const input = getInput(); if(!input) return;
+        animationQueue = [];
+        let curr = root;
+
+        for(let i=0; i<input.length; i++) {
+            const char = input[i];
+            if(!curr.children[char]) {
+                animationQueue.push({ type: 'error', treeSnapshot: cloneTrie(root), targetId: curr.id, msg: `Char '${char}' not found!` });
+                showStatus(`'${input}' not found`);
+                runAnimation();
+                return;
+            }
+            curr = curr.children[char];
+            animationQueue.push({ type: 'visit', treeSnapshot: cloneTrie(root), targetId: curr.id });
+        }
+
+        if(curr.isEndOfWord) {
+            animationQueue.push({ type: 'success', treeSnapshot: cloneTrie(root), targetId: curr.id, msg: `Found '${input}'` });
+        } else {
+            animationQueue.push({ type: 'partial', treeSnapshot: cloneTrie(root), targetId: curr.id, msg: `Prefix '${input}' exists, but not a word` });
+        }
+        runAnimation();
+    }
+
+    function handleStartsWith() {
+        const input = getInput(); if(!input) return;
+        animationQueue = [];
+        let curr = root;
+
+        for(let i=0; i<input.length; i++) {
+            const char = input[i];
+            if(!curr.children[char]) {
+                showStatus("Prefix not found");
+                runAnimation();
+                return;
+            }
+            curr = curr.children[char];
+            animationQueue.push({ type: 'visit', treeSnapshot: cloneTrie(root), targetId: curr.id });
+        }
+        
+        // Highlight subtree
+        let subtreeIds = [];
+        const collectIds = (n) => {
+            subtreeIds.push(n.id);
+            Object.values(n.children).forEach(c => collectIds(c));
+        };
+        collectIds(curr);
+
+        animationQueue.push({ 
+            type: 'highlight-subtree', 
+            treeSnapshot: cloneTrie(root), 
+            targetIds: subtreeIds, 
+            msg: `Found ${subtreeIds.length} nodes with prefix '${input}'` 
+        });
+        runAnimation();
+    }
+
+    function handleDelete(valOverride) {
+        const input = valOverride || getInput(); if(!input) return;
+        animationQueue = [];
+
+        // Recursive delete to allow pruning up
+        const deleteRec = (node, depth) => {
+             if(depth === input.length) {
+                 if(!node.isEndOfWord) return false; // Word doesn't exist
+                 node.isEndOfWord = false; // Unmark
+                 animationQueue.push({ type: 'visit', treeSnapshot: cloneTrie(root), targetId: node.id, msg: "Unmarked end of word" });
+                 // If leaf, return true to prune
+                 return Object.keys(node.children).length === 0;
+             }
+
+             const char = input[depth];
+             if(!node.children[char]) return false; // Not found
+
+             const shouldPruneChild = deleteRec(node.children[char], depth + 1);
+             
+             if(shouldPruneChild) {
+                 delete node.children[char];
+                 recalculateTree(); // Update layout after prune
+                 animationQueue.push({ type: 'visit', treeSnapshot: cloneTrie(root), targetId: node.id, msg: `Pruned branch '${char}'` });
+                 return Object.keys(node.children).length === 0 && !node.isEndOfWord;
+             }
+             return false;
+        };
+
+        deleteRec(root, 0);
+        animationQueue.push({ type: 'idle', treeSnapshot: cloneTrie(root), msg: "Delete Complete" });
+        runAnimation();
+    }
+
+    function directDelete(word) {
+        document.getElementById('textInput').value = word;
+        handleDelete(word);
+    }
+
+    // --- Animation Engine ---
+    function runAnimation() {
+        if(isAnimating || animationQueue.length === 0) return;
+        isAnimating = true;
+        disableControls(true);
+        let stepIndex = 0;
+        
+        const process = () => {
+            if(stepIndex >= animationQueue.length) {
+                isAnimating = false;
+                disableControls(false);
+                updateDictionaryView();
+                drawTrie(null);
+                return;
+            }
+            const step = animationQueue[stepIndex++];
+            if(step.msg) showStatus(step.msg);
+
+            drawTrie(step);
+            setTimeout(process, 400);
+        };
+        process();
+    }
+
+    // --- Drawing ---
+    function drawTrie(step) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const centerX = canvas.width / 2;
+        const data = step ? step.treeSnapshot : root;
+        if(!data) return;
+
+        ctx.save();
+        ctx.translate(-offsetX, offsetY); 
+        ctx.translate(canvas.width/2 + offsetX, 50 + offsetY); // Initial camera pos
+        ctx.scale(scale, scale);
+        
+        // Shift drawing so root is centered at (0,0) relative to transforms
+        // Actually, our layout logic assigns root.x = 0. So no extra shift needed.
+        
+        // Draw Edges First
+        const drawEdges = (node) => {
+            if(!node) return;
+            Object.values(node.children).forEach(child => {
+                ctx.beginPath();
+                ctx.moveTo(node.x, node.y);
+                ctx.lineTo(child.x, child.y);
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                drawEdges(child);
+            });
+        };
+        drawEdges(data);
+
+        // Draw Nodes
+        const drawNodes = (node) => {
+            if(!node) return;
+
+            let bgColor = COLORS.empty;
+            let borderColor = COLORS.border;
+            let textColor = 'rgba(255,255,255,0.6)';
+
+            if(node.isEndOfWord) {
+                borderColor = COLORS.end;
+                bgColor = 'rgba(40, 167, 69, 0.2)';
+                textColor = '#fff';
+            }
+
+            // Highlighting based on step
+            if(step) {
+                if (step.targetId === node.id) {
+                    if(step.type === 'visit') { bgColor = COLORS.process; borderColor = COLORS.process; textColor='#000'; }
+                    if(step.type === 'success') { bgColor = COLORS.end; borderColor = COLORS.end; }
+                    if(step.type === 'error') { borderColor = COLORS.error; }
+                    if(step.type === 'partial') { bgColor = 'orange'; }
+                }
+                if (step.type === 'highlight-subtree' && step.targetIds.includes(node.id)) {
+                    borderColor = COLORS.process;
+                    bgColor = 'rgba(255, 193, 7, 0.2)';
+                }
+            }
+
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI*2);
+            ctx.fillStyle = bgColor;
+            ctx.fill();
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = node.isEndOfWord ? 3 : 1;
+            ctx.stroke();
+
+            ctx.fillStyle = textColor;
+            ctx.font = 'bold 14px Inter';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            // Don't show '*' for root if strictly following visual
+            if(node.char !== '*') ctx.fillText(node.char.toUpperCase(), node.x, node.y);
+
+            Object.values(node.children).forEach(child => drawNodes(child));
+        };
+        drawNodes(data);
+
+        ctx.restore();
+    }
+
+    // --- Helpers ---
+    function getInput() {
+        const el = document.getElementById('textInput');
+        let val = el.value.trim().toLowerCase();
+        // Regex validation a-z only
+        val = val.replace(/[^a-z]/g, '');
+        if(!val) { el.focus(); return null; }
+        el.value = ''; el.focus();
+        return val;
+    }
+
+    function showStatus(msg) {
+        const el = document.getElementById('statusMessage');
+        el.innerText = msg; el.classList.add('show');
+        setTimeout(()=>el.classList.remove('show'), 2000);
+    }
+    
+    function handleRandom() {
+        handleClear();
+        const set = ["car", "cart", "cat", "bat", "bath", "bar"];
+        set.forEach(w => {
+            let curr = root;
+            for(let c of w) {
+                if(!curr.children[c]) curr.children[c] = new TrieNode(c);
+                curr = curr.children[c];
+            }
+            curr.isEndOfWord = true;
+        });
+        recalculateTree();
+        updateDictionaryView();
+        drawTrie(null);
+        showStatus("Random Set Inserted");
+    }
+    
+    function handleClear() {
+        root = new TrieNode('*');
+        animationQueue = [];
+        updateDictionaryView();
+        drawTrie(null);
+        showStatus("Cleared");
+    }
+    
+    function handleEnter(e) { if(e.key==='Enter') handleInsert(); }
+    
+    function disableControls(dis) {
+        document.querySelectorAll('button:not(.zoom-btn):not(.word-chip i)').forEach(b=>b.disabled=dis);
+    }
+
+    // Camera
+    function zoomIn() { scale = Math.min(scale*1.2, 3); drawTrie(null); }
+    function zoomOut() { scale = Math.max(scale/1.2, 0.1); drawTrie(null); }
+    function resetView() { offsetX=0; offsetY=0; scale=1; drawTrie(null); }
+
+    // Start
+    resizeCanvas();
+    showStatus("Ready");
+    updateDictionaryView();
+
+</script>
 </body>
 </html>

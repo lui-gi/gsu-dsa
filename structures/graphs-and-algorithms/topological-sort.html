@@ -3,40 +3,760 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Topological Sort - gsu dsa</title>
+    <title>Topological Sort (DFS) - gsu dsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
+        :root {
+            --gsu-blue: #0039A6;
+            --gsu-blue-light: #4d8dff;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            
+            /* Graph Colors */
+            --node-fill: #0039A6;
+            --node-border: rgba(255, 255, 255, 0.6);
+            --edge-normal: rgba(255, 255, 255, 0.3);
+            --edge-highlight: #ffc107;
+            --node-visited: #f59e0b; /* Discovery (Yellow) */
+            --node-finished: #10b981; /* Finished (Green) */
+            --node-error: #ef4444;    /* Cycle (Red) */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #000c24;
+            color: var(--text-main);
             height: 100vh;
-            background: radial-gradient(circle at top right, #0055CC, #001F5C);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            color: white;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            text-align: center;
+            padding: 20px;
         }
+
+        /* --- BACKGROUND AURA --- */
+        .aura-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .aura-blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+        .blob-1 { background: var(--gsu-blue); width: 700px; height: 700px; top: -10%; left: -10%; animation-duration: 25s; }
+        .blob-2 { background: #0055CC; width: 600px; height: 600px; bottom: -10%; right: -20%; animation-delay: -5s; animation-duration: 30s; }
+        .blob-3 { background: #001F5C; width: 800px; height: 800px; bottom: -20%; left: 20%; opacity: 0.8; animation-delay: -10s; }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 50px) scale(1.1); }
+            100% { transform: translate(-30px, -20px) scale(0.9); }
+        }
+
+        /* --- MAIN GLASS CONTAINER --- */
+        .main-glass-card {
+            width: 100%;
+            max-width: 1600px;
+            height: 95vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        /* --- HEADER --- */
+        header {
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+            z-index: 20;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        
         h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
         }
-        p {
-            font-size: 18px;
-            opacity: 0.8;
+
+        .back-btn {
+            color: var(--gsu-blue-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.2s;
         }
-        a {
+        .back-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--text-muted); }
+
+        /* --- CONTROLS --- */
+        .controls-toolbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            padding-left: 10px;
+            border-left: 1px solid var(--glass-border);
+        }
+        .control-group:first-child { border-left: none; padding-left: 0; }
+
+        button {
+            background: rgba(255,255,255,0.08);
             color: white;
-            text-decoration: underline;
-            margin-top: 20px;
-            display: inline-block;
+            border: 1px solid var(--glass-border);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+            display: flex; align-items: center; gap: 6px;
         }
+        button:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-1px);
+        }
+        button.active {
+            background: var(--gsu-blue);
+            border-color: var(--gsu-blue);
+        }
+        button.primary {
+            background: var(--node-finished); /* Green */
+            border-color: var(--node-finished);
+        }
+        button.primary:hover { background: #059669; }
+
+        /* --- CANVAS AREA --- */
+        #canvas-wrapper {
+            flex-grow: 1;
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            overflow: hidden;
+            cursor: crosshair;
+            z-index: 1;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- OVERLAYS --- */
+        .legend {
+            position: absolute;
+            top: 20px; left: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            display: flex; flex-direction: column; gap: 8px;
+            font-size: 12px; color: var(--text-muted); pointer-events: none;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+
+        .status-message {
+            position: absolute;
+            top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--gsu-blue-light);
+            color: var(--gsu-blue-light);
+            padding: 10px 24px; border-radius: 20px;
+            font-size: 14px; pointer-events: none;
+            opacity: 0; transition: opacity 0.3s;
+            z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .status-message.show { opacity: 1; }
+
+        /* --- VISUAL STACK (Right Overlay) --- */
+        #stack-overlay {
+            position: absolute;
+            top: 20px; right: 20px; bottom: 20px;
+            width: 180px;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .stack-header {
+            padding: 12px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+        }
+        .stack-content {
+            flex-grow: 1;
+            padding: 10px;
+            display: flex;
+            flex-direction: column-reverse; /* Bottom up */
+            gap: 6px;
+            overflow-y: auto;
+        }
+        /* Custom Scrollbar */
+        .stack-content::-webkit-scrollbar { width: 4px; }
+        .stack-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+        .stack-item {
+            background: var(--node-finished);
+            color: white;
+            padding: 8px;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            animation: slideIn 0.4s ease-out;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* --- BOTTOM PANEL (Timing Table) --- */
+        #bottom-panel {
+            height: 250px;
+            min-height: 250px;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(15, 23, 42, 0.4);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex; justify-content: space-between;
+        }
+
+        .data-table-container {
+            flex-grow: 1;
+            overflow: auto;
+            padding: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th {
+            text-align: left;
+            padding: 12px 20px;
+            color: var(--gsu-blue-light);
+            background: rgba(255,255,255,0.02);
+            position: sticky; top: 0;
+            backdrop-filter: blur(5px);
+        }
+        td {
+            padding: 10px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            color: white;
+        }
+        tr:hover { background: rgba(255,255,255,0.03); }
+        .mono-cell { font-family: 'Consolas', monospace; color: var(--text-muted); }
+        .status-cell { font-weight: 500; }
+        
     </style>
 </head>
 <body>
-    <h1>Topological Sort</h1>
-    <p>Visualization coming soon...</p>
-    <a href="../../index.html">← Back to Navigation</a>
+
+    <div class="aura-container">
+        <div class="aura-blob blob-1"></div>
+        <div class="aura-blob blob-2"></div>
+        <div class="aura-blob blob-3"></div>
+    </div>
+
+    <div class="main-glass-card">
+        <header>
+            <div class="header-left">
+                <a href="#" class="back-btn" onclick="window.parent.closeIframe(); return false;">← Back</a>
+                <h1><i class="fa-solid fa-layer-group" style="margin-right: 12px; color: var(--gsu-blue-light);"></i>Topological Sort (DFS)</h1>
+            </div>
+            
+            <div class="controls-toolbar">
+                <div class="control-group">
+                    <button id="btn-mode-node" class="active" onclick="setMode('node')" title="Add Nodes"><i class="fa-solid fa-plus"></i> Node</button>
+                    <button id="btn-mode-edge" onclick="setMode('edge')" title="Draw Directed Edges"><i class="fa-solid fa-arrow-right-long"></i> Edge</button>
+                </div>
+
+                <div class="control-group">
+                    <button class="primary" onclick="runTopologicalSort()"><i class="fa-solid fa-play"></i> Run Sort</button>
+                </div>
+                
+                <div class="control-group">
+                    <button onclick="loadScenario('clothing')">Clothing</button>
+                    <button onclick="loadScenario('cycle')">Cycle Trap</button>
+                    <button onclick="clearGraph()">Clear</button>
+                </div>
+            </div>
+        </header>
+
+        <div id="canvas-wrapper">
+            <canvas id="graphCanvas"></canvas>
+            
+            <div class="status-message" id="statusMessage"></div>
+            
+            <div class="legend">
+                <div class="legend-item"><div class="dot" style="background: var(--node-fill);"></div>Unvisited</div>
+                <div class="legend-item"><div class="dot" style="background: var(--node-visited);"></div>Discovered (Start)</div>
+                <div class="legend-item"><div class="dot" style="background: var(--node-finished);"></div>Finished (End)</div>
+                <div class="legend-item"><div class="dot" style="background: var(--node-error);"></div>Cycle</div>
+            </div>
+
+            <div id="stack-overlay">
+                <div class="stack-header">Recursion Stack (LIFO)</div>
+                <div class="stack-content" id="stackContent">
+                    </div>
+            </div>
+        </div>
+
+        <div id="bottom-panel">
+            <div class="panel-header">
+                <span>DFS Timing Table</span>
+                <span>Global Time: <span id="globalTimer" style="color:white;">0</span></span>
+            </div>
+            <div class="data-table-container">
+                <table id="timingTable">
+                    <thead>
+                        <tr>
+                            <th>Node Label</th>
+                            <th>Discovery Time</th>
+                            <th>Finish Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="timingBody">
+                        <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">Add nodes or load a scenario to begin</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+    const style = getComputedStyle(document.body);
+
+    const COLORS = {
+        nodeFill: style.getPropertyValue('--node-fill').trim(),
+        nodeBorder: style.getPropertyValue('--node-border').trim(),
+        edge: style.getPropertyValue('--edge-normal').trim(),
+        edgeHl: style.getPropertyValue('--edge-highlight').trim(),
+        visited: style.getPropertyValue('--node-visited').trim(),
+        finished: style.getPropertyValue('--node-finished').trim(),
+        error: style.getPropertyValue('--node-error').trim(),
+        text: '#fff'
+    };
+
+    const NODE_RADIUS = 20;
+
+    // --- State ---
+    let mode = 'node'; 
+    let nodes = []; 
+    let edges = []; 
+    let nextId = 0;
+    
+    // Interaction
+    let isDragging = false;
+    let edgeStartNode = null;
+    let mouseX = 0, mouseY = 0;
+
+    // Animation
+    let isRunning = false;
+    let globalTime = 0;
+    
+    // Node Status State for Rendering
+    let nodeStatus = {}; // id -> 'unvisited' | 'visited' | 'finished' | 'error'
+    let edgeStatus = {}; // key -> color
+
+    // --- Init ---
+    function resizeCanvas() {
+        const wrapper = document.getElementById('canvas-wrapper');
+        canvas.width = wrapper.offsetWidth;
+        canvas.height = wrapper.offsetHeight;
+        draw();
+    }
+    window.addEventListener('resize', resizeCanvas);
+    setTimeout(resizeCanvas, 100);
+
+    // --- Controls ---
+    function setMode(m) {
+        if(isRunning) return;
+        mode = m;
+        document.getElementById('btn-mode-node').classList.toggle('active', m==='node');
+        document.getElementById('btn-mode-edge').classList.toggle('active', m==='edge');
+        edgeStartNode = null;
+        draw();
+    }
+
+    function showStatus(msg) {
+        const el = document.getElementById('statusMessage');
+        el.innerText = msg; el.classList.add('show');
+        setTimeout(()=>el.classList.remove('show'), 2000);
+    }
+
+    // --- Canvas Logic ---
+    canvas.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+        if (mode === 'edge' && isDragging) draw(); 
+    });
+
+    canvas.addEventListener('mousedown', e => {
+        if(isRunning) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const clickedNode = nodes.find(n => Math.hypot(n.x - x, n.y - y) < NODE_RADIUS + 5);
+
+        if (mode === 'node') {
+            if (!clickedNode) addNode(x, y);
+        } else if (mode === 'edge') {
+            if (clickedNode) {
+                isDragging = true;
+                edgeStartNode = clickedNode;
+            }
+        }
+    });
+
+    canvas.addEventListener('mouseup', e => {
+        if (mode === 'edge' && isDragging && edgeStartNode) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const clickedNode = nodes.find(n => Math.hypot(n.x - x, n.y - y) < NODE_RADIUS + 5);
+            
+            if (clickedNode && clickedNode !== edgeStartNode) {
+                addEdge(edgeStartNode.id, clickedNode.id);
+            }
+        }
+        isDragging = false;
+        edgeStartNode = null;
+        draw();
+    });
+
+    // --- Graph Operations ---
+    function addNode(x, y, label=null) {
+        const lbl = label || String.fromCharCode(65 + (nextId % 26)) + (Math.floor(nextId/26) || "");
+        nodes.push({ id: nextId++, x, y, label: lbl });
+        resetTable();
+        draw();
+    }
+
+    function addEdge(u, v) {
+        if (!edges.some(e => e.u === u && e.v === v)) {
+            edges.push({ u, v });
+            draw();
+        }
+    }
+
+    function clearGraph() {
+        nodes = [];
+        edges = [];
+        nextId = 0;
+        nodeStatus = {};
+        edgeStatus = {};
+        isRunning = false;
+        document.getElementById('stackContent').innerHTML = '';
+        resetTable();
+        draw();
+    }
+
+    function loadScenario(type) {
+        clearGraph();
+        if (type === 'clothing') {
+            const cx = canvas.width/2, cy = canvas.height/2;
+            // Manual layout for clothing DAG
+            addNode(cx-200, cy-150, "Undies"); // 0
+            addNode(cx, cy-150, "Pants");     // 1
+            addNode(cx+200, cy-150, "Belt");  // 2
+            addNode(cx-200, cy, "Shirt");     // 3
+            addNode(cx, cy, "Tie");           // 4
+            addNode(cx+200, cy, "Jacket");    // 5
+            addNode(cx-200, cy+150, "Socks"); // 6
+            addNode(cx, cy+150, "Shoes");     // 7
+            
+            // Edges
+            addEdge(0, 1); // Undies->Pants
+            addEdge(1, 2); // Pants->Belt
+            addEdge(1, 7); // Pants->Shoes
+            addEdge(3, 2); // Shirt->Belt
+            addEdge(3, 4); // Shirt->Tie
+            addEdge(4, 5); // Tie->Jacket
+            addEdge(2, 5); // Belt->Jacket
+            addEdge(6, 7); // Socks->Shoes
+        } else if (type === 'cycle') {
+            const cx = canvas.width/2, cy = canvas.height/2;
+            addNode(cx, cy-100, "A");
+            addNode(cx+100, cy+50, "B");
+            addNode(cx-100, cy+50, "C");
+            addEdge(0, 1);
+            addEdge(1, 2);
+            addEdge(2, 0);
+        }
+    }
+
+    // --- Table & Stack Logic ---
+    function resetTable() {
+        const tbody = document.getElementById('timingBody');
+        tbody.innerHTML = '';
+        nodes.forEach(n => {
+            const tr = document.createElement('tr');
+            tr.id = `row-${n.id}`;
+            tr.innerHTML = `
+                <td style="font-weight:bold;">${n.label}</td>
+                <td class="mono-cell" id="d-${n.id}">-</td>
+                <td class="mono-cell" id="f-${n.id}">-</td>
+                <td class="status-cell" id="s-${n.id}">Unvisited</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        document.getElementById('globalTimer').innerText = '0';
+        document.getElementById('stackContent').innerHTML = '';
+    }
+
+    function updateTable(id, type, val, statusText, statusColor) {
+        if(type === 'discovery') document.getElementById(`d-${id}`).innerText = val;
+        if(type === 'finish') document.getElementById(`f-${id}`).innerText = val;
+        
+        const sCell = document.getElementById(`s-${id}`);
+        sCell.innerText = statusText;
+        sCell.style.color = statusColor;
+        
+        document.getElementById('globalTimer').innerText = globalTime;
+    }
+
+    function pushStack(label) {
+        const div = document.createElement('div');
+        div.className = 'stack-item';
+        div.innerText = label;
+        document.getElementById('stackContent').appendChild(div);
+    }
+
+    // --- Algorithm: DFS Topological Sort ---
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    async function runTopologicalSort() {
+        if (isRunning || nodes.length === 0) return;
+        isRunning = true;
+        globalTime = 0;
+        nodeStatus = {};
+        edgeStatus = {};
+        resetTable();
+        document.getElementById('stackContent').innerHTML = '';
+        
+        // Prepare state
+        const visited = {};     // id -> bool
+        const recStack = {};    // id -> bool (for cycle detection)
+        
+        try {
+            for (let i = 0; i < nodes.length; i++) {
+                const n = nodes[i];
+                if (!visited[n.id]) {
+                    await dfs(n.id, visited, recStack);
+                }
+            }
+            showStatus("Sort Complete!");
+        } catch (e) {
+            if (e === 'CYCLE') showStatus("Cycle Detected! Not a DAG.");
+        }
+        
+        isRunning = false;
+    }
+
+    async function dfs(uId, visited, recStack) {
+        visited[uId] = true;
+        recStack[uId] = true;
+        globalTime++;
+        
+        // Visual: Discovery
+        nodeStatus[uId] = 'visited';
+        updateTable(uId, 'discovery', globalTime, 'Discovered', COLORS.visited);
+        draw();
+        await sleep(800);
+
+        // Neighbors
+        const neighbors = edges.filter(e => e.u === uId).map(e => e.v).sort((a,b)=>a-b);
+        
+        for (let vId of neighbors) {
+            const edgeKey = `${uId}-${vId}`;
+            
+            if (!visited[vId]) {
+                edgeStatus[edgeKey] = COLORS.edgeHl;
+                draw();
+                await sleep(400);
+                
+                await dfs(vId, visited, recStack);
+                
+                edgeStatus[edgeKey] = COLORS.visited; // Mark edge processed
+            } else if (recStack[vId]) {
+                // Cycle
+                nodeStatus[uId] = 'error';
+                nodeStatus[vId] = 'error';
+                edgeStatus[edgeKey] = COLORS.error;
+                draw();
+                updateTable(uId, '', '', 'CYCLE ERROR', COLORS.error);
+                throw 'CYCLE';
+            }
+        }
+
+        recStack[uId] = false;
+        globalTime++;
+        
+        // Visual: Finish
+        nodeStatus[uId] = 'finished';
+        updateTable(uId, 'finish', globalTime, 'Finished', COLORS.finished);
+        
+        const nodeObj = nodes.find(n => n.id === uId);
+        pushStack(nodeObj.label);
+        
+        draw();
+        await sleep(800);
+    }
+
+
+    // --- Drawing ---
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw Edges
+        edges.forEach(e => {
+            const u = nodes.find(n => n.id === e.u);
+            const v = nodes.find(n => n.id === e.v);
+            if(!u || !v) return;
+
+            let color = COLORS.edge;
+            let width = 2;
+            const key = `${e.u}-${e.v}`;
+            
+            if (edgeStatus[key]) {
+                color = edgeStatus[key];
+                width = (color === COLORS.edgeHl || color === COLORS.error) ? 4 : 2;
+            }
+
+            drawArrow(u, v, color, width);
+        });
+
+        // Temp Edge
+        if (mode === 'edge' && isDragging && edgeStartNode) {
+            drawArrow(edgeStartNode, {x: mouseX, y: mouseY}, COLORS.edgeHl, 2);
+        }
+
+        // Draw Nodes
+        nodes.forEach(n => {
+            let fill = COLORS.nodeFill;
+            let border = COLORS.nodeBorder;
+            
+            // Status Overrides
+            const status = nodeStatus[n.id];
+            if (status === 'visited') fill = COLORS.visited;
+            else if (status === 'finished') fill = COLORS.finished;
+            else if (status === 'error') fill = COLORS.error;
+
+            // Render
+            ctx.shadowBlur = (status) ? 15 : 0;
+            ctx.shadowColor = fill;
+
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, NODE_RADIUS, 0, Math.PI*2);
+            ctx.fillStyle = fill;
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = border;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = COLORS.text;
+            ctx.font = 'bold 14px Inter';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(n.label, n.x, n.y);
+        });
+    }
+
+    function drawArrow(from, to, color, width) {
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const angle = Math.atan2(dy, dx);
+        
+        // Calculate edge points (clip to node radius)
+        const startX = from.x + Math.cos(angle) * NODE_RADIUS;
+        const startY = from.y + Math.sin(angle) * NODE_RADIUS;
+        
+        // For temp mouse dragging, don't subtract radius at target
+        const isTemp = !nodes.includes(to);
+        const endX = to.x - (isTemp ? 0 : Math.cos(angle) * NODE_RADIUS);
+        const endY = to.y - (isTemp ? 0 : Math.sin(angle) * NODE_RADIUS);
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.stroke();
+
+        // Arrowhead
+        const headLen = 10;
+        ctx.beginPath();
+        ctx.moveTo(endX, endY);
+        ctx.lineTo(endX - headLen * Math.cos(angle - Math.PI/6), endY - headLen * Math.sin(angle - Math.PI/6));
+        ctx.lineTo(endX - headLen * Math.cos(angle + Math.PI/6), endY - headLen * Math.sin(angle + Math.PI/6));
+        ctx.fillStyle = color;
+        ctx.fill();
+    }
+
+    resizeCanvas();
+    showStatus("Ready");
+</script>
 </body>
 </html>

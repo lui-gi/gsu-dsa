@@ -4,39 +4,943 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Graph Representation - gsu dsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
+        :root {
+            --gsu-blue: #0039A6;
+            --gsu-blue-light: #4d8dff;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            
+            /* Graph Colors */
+            --node-fill: #0039A6;
+            --node-border: rgba(255, 255, 255, 0.6);
+            --edge-normal: rgba(255, 255, 255, 0.3);
+            --edge-highlight: #ffc107;
+            --node-visited: #28a745;
+            --node-processing: #ffc107;
+            --matrix-hl: rgba(255, 193, 7, 0.25);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #000c24;
+            color: var(--text-main);
             height: 100vh;
-            background: radial-gradient(circle at top right, #0055CC, #001F5C);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            color: white;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            text-align: center;
+            padding: 20px;
         }
+
+        /* --- BACKGROUND AURA --- */
+        .aura-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .aura-blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+        .blob-1 { background: var(--gsu-blue); width: 700px; height: 700px; top: -10%; left: -10%; animation-duration: 25s; }
+        .blob-2 { background: #0055CC; width: 600px; height: 600px; bottom: -10%; right: -20%; animation-delay: -5s; animation-duration: 30s; }
+        .blob-3 { background: #001F5C; width: 800px; height: 800px; bottom: -20%; left: 20%; opacity: 0.8; animation-delay: -10s; }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 50px) scale(1.1); }
+            100% { transform: translate(-30px, -20px) scale(0.9); }
+        }
+
+        /* --- MAIN GLASS CONTAINER --- */
+        .main-glass-card {
+            width: 100%;
+            max-width: 1600px;
+            height: 95vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        /* --- HEADER & CONTROLS --- */
+        header {
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+            z-index: 20;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        
         h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
         }
-        p {
-            font-size: 18px;
-            opacity: 0.8;
+
+        .back-btn {
+            color: var(--gsu-blue-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.2s;
         }
-        a {
+        .back-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--text-muted); }
+
+        .controls-toolbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            padding-left: 10px;
+            border-left: 1px solid var(--glass-border);
+        }
+        .control-group:first-child { border-left: none; padding-left: 0; }
+
+        /* Custom Toggle Switch */
+        .toggle-switch {
+            display: flex;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 2px;
+            border: 1px solid var(--glass-border);
+        }
+        .toggle-option {
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .toggle-option.active {
+            background: var(--gsu-blue);
             color: white;
-            text-decoration: underline;
-            margin-top: 20px;
-            display: inline-block;
+            font-weight: 600;
         }
+
+        select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+        }
+        select option { background: #0f172a; color: white; }
+
+        button {
+            background: rgba(255,255,255,0.08);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-1px);
+        }
+        button.active {
+            background: var(--gsu-blue);
+            border-color: var(--gsu-blue);
+        }
+
+        /* --- CANVAS AREA --- */
+        #canvas-wrapper {
+            flex-grow: 1;
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            overflow: hidden;
+            cursor: crosshair;
+            z-index: 1;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .status-message {
+            position: absolute;
+            top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--gsu-blue-light);
+            color: var(--gsu-blue-light);
+            padding: 10px 24px; border-radius: 20px;
+            font-size: 14px; pointer-events: none;
+            opacity: 0; transition: opacity 0.3s;
+            z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .status-message.show { opacity: 1; }
+
+        .legend {
+            position: absolute;
+            top: 20px; left: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            display: flex; flex-direction: column; gap: 8px;
+            font-size: 12px; color: var(--text-muted); pointer-events: none;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+
+        /* --- BOTTOM PANEL (Dual View) --- */
+        #bottom-panel {
+            height: 280px;
+            min-height: 280px;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(15, 23, 42, 0.4);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--glass-border);
+            padding: 0 20px;
+            background: rgba(0,0,0,0.2);
+        }
+        .panel-tab {
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .panel-tab:hover { color: white; }
+        .panel-tab.active {
+            color: var(--gsu-blue-light);
+            border-bottom-color: var(--gsu-blue-light);
+        }
+
+        .panel-content {
+            flex-grow: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .view-section {
+            display: none;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            overflow: auto;
+        }
+        .view-section.active { display: block; }
+
+        /* Matrix Styles */
+        .matrix-container {
+            display: inline-block;
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .matrix-row { display: flex; }
+        .matrix-cell {
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            border-right: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            color: rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .matrix-cell.header {
+            background: rgba(255,255,255,0.05);
+            color: var(--gsu-blue-light);
+            font-weight: bold;
+        }
+        .matrix-cell.active-val {
+            color: white;
+            font-weight: bold;
+            background: rgba(255,255,255,0.02);
+        }
+        .matrix-cell:hover:not(.header) {
+            background: var(--matrix-hl);
+        }
+
+        /* List Styles */
+        .adj-list-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+        }
+        .list-head {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: var(--gsu-blue);
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+            border: 2px solid rgba(255,255,255,0.2);
+            flex-shrink: 0;
+        }
+        .list-neighbors {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .list-node {
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 6px;
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex; align-items: center;
+        }
+        .list-node:hover {
+            background: var(--matrix-hl);
+            border-color: var(--edge-highlight);
+        }
+        .arrow-sep { color: var(--text-muted); opacity: 0.5; font-size: 12px; }
+
+        /* Scrollbars */
+        .view-section::-webkit-scrollbar { width: 8px; height: 8px; }
+        .view-section::-webkit-scrollbar-track { background: transparent; }
+        .view-section::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
     </style>
 </head>
 <body>
-    <h1>Graph Representation</h1>
-    <p>Visualization coming soon...</p>
-    <a href="../../index.html">← Back to Navigation</a>
+
+    <div class="aura-container">
+        <div class="aura-blob blob-1"></div>
+        <div class="aura-blob blob-2"></div>
+        <div class="aura-blob blob-3"></div>
+    </div>
+
+    <div class="main-glass-card">
+        <header>
+            <div class="header-left">
+                <a href="#" class="back-btn" onclick="window.parent.closeIframe(); return false;">← Back</a>
+                <h1><i class="fa-solid fa-circle-nodes" style="margin-right: 12px; color: var(--gsu-blue-light);"></i>Graph Representation</h1>
+            </div>
+            
+            <div class="controls-toolbar">
+                <div class="control-group">
+                    <div class="toggle-switch">
+                        <div class="toggle-option active" id="opt-undirected" onclick="setGraphType(false)">Undirected</div>
+                        <div class="toggle-option" id="opt-directed" onclick="setGraphType(true)">Directed</div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <button id="btn-mode-node" class="active" onclick="setMode('node')" title="Add Nodes"><i class="fa-solid fa-plus"></i> Node</button>
+                    <button id="btn-mode-edge" onclick="setMode('edge')" title="Draw Edges"><i class="fa-solid fa-share-nodes"></i> Edge</button>
+                    <button id="btn-mode-move" onclick="setMode('move')" title="Move Nodes"><i class="fa-solid fa-up-down-left-right"></i> Move</button>
+                </div>
+
+                <div class="control-group">
+                    <select id="startNodeSelect">
+                        <option value="-1">Start Node</option>
+                    </select>
+                    <button onclick="runBFS()">BFS</button>
+                    <button onclick="runDFS()">DFS</button>
+                </div>
+                
+                <div class="control-group">
+                    <button onclick="generateRandom()">Random</button>
+                    <button onclick="clearGraph()">Clear</button>
+                </div>
+            </div>
+        </header>
+
+        <div id="canvas-wrapper">
+            <canvas id="graphCanvas"></canvas>
+            <div class="status-message" id="statusMessage"></div>
+            
+            <div class="legend">
+                <div class="legend-item"><div class="dot" style="background: var(--node-fill);"></div>Node</div>
+                <div class="legend-item"><div class="dot" style="background: var(--node-visited);"></div>Visited</div>
+                <div class="legend-item"><div class="dot" style="background: var(--node-processing);"></div>Processing</div>
+            </div>
+        </div>
+
+        <div id="bottom-panel">
+            <div class="panel-tabs">
+                <div class="panel-tab active" onclick="switchTab('matrix')">Adjacency Matrix</div>
+                <div class="panel-tab" onclick="switchTab('list')">Adjacency List</div>
+            </div>
+            <div class="panel-content">
+                <div class="view-section active" id="view-matrix">
+                    <div class="matrix-container" id="matrixContent"></div>
+                </div>
+                <div class="view-section" id="view-list">
+                    <div id="listContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+    const style = getComputedStyle(document.body);
+
+    const COLORS = {
+        nodeFill: style.getPropertyValue('--node-fill').trim(),
+        nodeBorder: style.getPropertyValue('--node-border').trim(),
+        edge: style.getPropertyValue('--edge-normal').trim(),
+        edgeHl: style.getPropertyValue('--edge-highlight').trim(),
+        visited: style.getPropertyValue('--node-visited').trim(),
+        processing: style.getPropertyValue('--node-processing').trim(),
+        text: '#fff'
+    };
+
+    const NODE_RADIUS = 20;
+
+    // --- State ---
+    let isDirected = false;
+    let mode = 'node'; // 'node', 'edge', 'move'
+    let nodes = []; // {id: int, x: float, y: float}
+    let edges = []; // {u: int, v: int} - u and v are Node IDs
+    let nextId = 0;
+    
+    // Interaction State
+    let isDragging = false;
+    let dragNode = null;
+    let edgeStartNode = null;
+    let mouseX = 0, mouseY = 0;
+    
+    // Animation State
+    let animationQueue = [];
+    let isAnimating = false;
+    let highlightedNodes = new Map(); // id -> color
+    let highlightedEdges = new Set(); // "u-v" string
+
+    // Hover Highlight State from Matrix/List
+    let hoverEdge = null; // {u, v}
+
+    // --- Init ---
+    function resizeCanvas() {
+        const wrapper = document.getElementById('canvas-wrapper');
+        canvas.width = wrapper.offsetWidth;
+        canvas.height = wrapper.offsetHeight;
+        draw();
+    }
+    window.addEventListener('resize', resizeCanvas);
+    setTimeout(resizeCanvas, 100);
+
+    // --- Controls ---
+    function setGraphType(directed) {
+        isDirected = directed;
+        document.getElementById('opt-undirected').classList.toggle('active', !directed);
+        document.getElementById('opt-directed').classList.toggle('active', directed);
+        updateViews();
+        draw();
+    }
+
+    function setMode(m) {
+        mode = m;
+        document.getElementById('btn-mode-node').classList.toggle('active', m==='node');
+        document.getElementById('btn-mode-edge').classList.toggle('active', m==='edge');
+        document.getElementById('btn-mode-move').classList.toggle('active', m==='move');
+        canvas.style.cursor = m === 'move' ? 'grab' : 'crosshair';
+        edgeStartNode = null;
+        draw();
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+        
+        const idx = tab === 'matrix' ? 0 : 1;
+        document.querySelectorAll('.panel-tab')[idx].classList.add('active');
+        document.getElementById(`view-${tab}`).classList.add('active');
+    }
+
+    // --- Canvas Interaction ---
+    canvas.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+
+        if (mode === 'move' && isDragging && dragNode) {
+            dragNode.x = mouseX;
+            dragNode.y = mouseY;
+            draw();
+        } else if (mode === 'edge' && isDragging && edgeStartNode) {
+            draw(); // Redraw to show temp line
+        }
+    });
+
+    canvas.addEventListener('mousedown', e => {
+        if(isAnimating) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const clickedNode = nodes.find(n => Math.hypot(n.x - x, n.y - y) < NODE_RADIUS + 5);
+
+        if (mode === 'node') {
+            if (!clickedNode) addNode(x, y);
+        } else if (mode === 'edge') {
+            if (clickedNode) {
+                isDragging = true;
+                edgeStartNode = clickedNode;
+            }
+        } else if (mode === 'move') {
+            if (clickedNode) {
+                isDragging = true;
+                dragNode = clickedNode;
+                canvas.style.cursor = 'grabbing';
+            }
+        }
+    });
+
+    canvas.addEventListener('mouseup', e => {
+        if (mode === 'edge' && isDragging && edgeStartNode) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const clickedNode = nodes.find(n => Math.hypot(n.x - x, n.y - y) < NODE_RADIUS + 5);
+            
+            if (clickedNode) {
+                addEdge(edgeStartNode.id, clickedNode.id);
+            }
+        }
+        
+        isDragging = false;
+        dragNode = null;
+        edgeStartNode = null;
+        if(mode === 'move') canvas.style.cursor = 'grab';
+        draw();
+    });
+
+    // --- Graph Logic ---
+    function addNode(x, y) {
+        if(nodes.length >= 15) { showStatus("Max nodes reached"); return; }
+        const newNode = { id: nextId++, x, y };
+        nodes.push(newNode);
+        updateSelectOptions();
+        updateViews();
+        draw();
+    }
+
+    function addEdge(u, v) {
+        // Check if exists
+        const exists = edges.some(e => (e.u === u && e.v === v) || (!isDirected && e.u === v && e.v === u));
+        if (!exists) {
+            edges.push({ u, v });
+            updateViews();
+            draw();
+        }
+    }
+
+    function generateRandom() {
+        clearGraph();
+        const count = 5 + Math.floor(Math.random() * 4); // 5-8 nodes
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Circular layout
+        const cx = width/2, cy = height/2, r = Math.min(width, height)/3;
+        for(let i=0; i<count; i++) {
+            const angle = (i / count) * Math.PI * 2 - Math.PI/2;
+            addNode(cx + Math.cos(angle)*r, cy + Math.sin(angle)*r);
+        }
+
+        // Random edges
+        for(let i=0; i<count; i++) {
+            const targets = Math.floor(Math.random() * 2) + 1;
+            for(let j=0; j<targets; j++) {
+                const target = Math.floor(Math.random() * count);
+                if(target !== i) addEdge(i, target);
+            }
+        }
+        updateViews();
+    }
+
+    function clearGraph() {
+        nodes = [];
+        edges = [];
+        nextId = 0;
+        highlightedNodes.clear();
+        highlightedEdges.clear();
+        updateSelectOptions();
+        updateViews();
+        draw();
+    }
+
+    function updateSelectOptions() {
+        const sel = document.getElementById('startNodeSelect');
+        sel.innerHTML = '<option value="-1">Start Node</option>';
+        nodes.forEach(n => {
+            sel.innerHTML += `<option value="${n.id}">Node ${n.id}</option>`;
+        });
+    }
+
+    // --- Views Generation ---
+    function updateViews() {
+        updateMatrix();
+        updateList();
+    }
+
+    function getAdjacencyData() {
+        // Build map: id -> [neighbors]
+        const adj = {};
+        nodes.forEach(n => adj[n.id] = []);
+        edges.forEach(e => {
+            if (adj[e.u]) adj[e.u].push(e.v);
+            if (!isDirected && e.u !== e.v) {
+                if(adj[e.v]) adj[e.v].push(e.u);
+            }
+        });
+        // Sort for consistent display
+        Object.keys(adj).forEach(k => adj[k].sort((a,b)=>a-b));
+        return adj;
+    }
+
+    function updateMatrix() {
+        const container = document.getElementById('matrixContent');
+        container.innerHTML = '';
+        if(nodes.length === 0) return;
+
+        const adj = getAdjacencyData();
+        const sortedNodes = [...nodes].sort((a,b)=>a.id - b.id);
+
+        // Header Row
+        const headerRow = document.createElement('div');
+        headerRow.className = 'matrix-row';
+        headerRow.innerHTML = '<div class="matrix-cell header"></div>'; // Corner
+        sortedNodes.forEach(n => {
+            headerRow.innerHTML += `<div class="matrix-cell header">${n.id}</div>`;
+        });
+        container.appendChild(headerRow);
+
+        // Data Rows
+        sortedNodes.forEach(source => {
+            const row = document.createElement('div');
+            row.className = 'matrix-row';
+            // Row Header
+            row.innerHTML = `<div class="matrix-cell header">${source.id}</div>`;
+            
+            sortedNodes.forEach(target => {
+                const cell = document.createElement('div');
+                const isNeighbor = adj[source.id].includes(target.id);
+                cell.className = 'matrix-cell';
+                cell.textContent = isNeighbor ? '1' : '0';
+                if(isNeighbor) cell.classList.add('active-val');
+                
+                // Hover Events
+                cell.onmouseenter = () => { if(isNeighbor) { hoverEdge = {u: source.id, v: target.id}; draw(); } };
+                cell.onmouseleave = () => { hoverEdge = null; draw(); };
+                
+                row.appendChild(cell);
+            });
+            container.appendChild(row);
+        });
+    }
+
+    function updateList() {
+        const container = document.getElementById('listContent');
+        container.innerHTML = '';
+        const adj = getAdjacencyData();
+        const sortedNodes = [...nodes].sort((a,b)=>a.id - b.id);
+
+        sortedNodes.forEach(n => {
+            const row = document.createElement('div');
+            row.className = 'adj-list-row';
+            
+            const head = document.createElement('div');
+            head.className = 'list-head';
+            head.textContent = n.id;
+            row.appendChild(head);
+
+            const neighborsDiv = document.createElement('div');
+            neighborsDiv.className = 'list-neighbors';
+
+            const neighbors = adj[n.id];
+            if(neighbors.length === 0) {
+                neighborsDiv.innerHTML = '<span style="color:var(--text-muted); font-style:italic;">null</span>';
+            } else {
+                neighbors.forEach((nbrId, idx) => {
+                    if(idx > 0) neighborsDiv.innerHTML += '<span class="arrow-sep"><i class="fa-solid fa-arrow-right"></i></span>';
+                    
+                    const chip = document.createElement('div');
+                    chip.className = 'list-node';
+                    chip.textContent = nbrId;
+                    
+                    chip.onmouseenter = () => { hoverEdge = {u: n.id, v: nbrId}; draw(); };
+                    chip.onmouseleave = () => { hoverEdge = null; draw(); };
+                    
+                    neighborsDiv.appendChild(chip);
+                });
+                neighborsDiv.innerHTML += '<span class="arrow-sep"><i class="fa-solid fa-arrow-right"></i></span><span style="color:var(--text-muted);">null</span>';
+            }
+            row.appendChild(neighborsDiv);
+            container.appendChild(row);
+        });
+    }
+
+
+    // --- Algorithms ---
+
+    function getStartNode() {
+        const v = document.getElementById('startNodeSelect').value;
+        return v === "-1" ? null : parseInt(v);
+    }
+
+    function runBFS() {
+        const start = getStartNode();
+        if(start === null) { showStatus("Select a start node"); return; }
+        
+        animationQueue = [];
+        const visited = new Set();
+        const queue = [start];
+        visited.add(start);
+        const adj = getAdjacencyData();
+
+        animationQueue.push({ type: 'visit', id: start, msg: `BFS Start: ${start}` });
+
+        while(queue.length > 0) {
+            const u = queue.shift();
+            animationQueue.push({ type: 'process', id: u });
+
+            const neighbors = adj[u];
+            for(let v of neighbors) {
+                if(!visited.has(v)) {
+                    visited.add(v);
+                    queue.push(v);
+                    animationQueue.push({ type: 'visit', id: v, parent: u, msg: `Visit ${v}` });
+                }
+            }
+            animationQueue.push({ type: 'done', id: u });
+        }
+        runAnimation();
+    }
+
+    function runDFS() {
+        const start = getStartNode();
+        if(start === null) { showStatus("Select a start node"); return; }
+
+        animationQueue = [];
+        const visited = new Set();
+        const adj = getAdjacencyData();
+
+        function dfs(u, p) {
+            visited.add(u);
+            animationQueue.push({ type: 'visit', id: u, parent: p, msg: `DFS Visit ${u}` });
+            animationQueue.push({ type: 'process', id: u }); // Highlight current
+
+            const neighbors = adj[u];
+            for(let v of neighbors) {
+                if(!visited.has(v)) {
+                    dfs(v, u);
+                    // Backtrack visual
+                    animationQueue.push({ type: 'process', id: u, msg: `Backtrack to ${u}` });
+                }
+            }
+            animationQueue.push({ type: 'done', id: u });
+        }
+        
+        dfs(start, null);
+        runAnimation();
+    }
+
+    function runAnimation() {
+        if(isAnimating || animationQueue.length === 0) return;
+        isAnimating = true;
+        highlightedNodes.clear();
+        highlightedEdges.clear();
+        
+        let idx = 0;
+        const process = () => {
+            if(idx >= animationQueue.length) {
+                isAnimating = false;
+                return;
+            }
+            const step = animationQueue[idx++];
+            if(step.msg) showStatus(step.msg);
+
+            if(step.type === 'visit') {
+                highlightedNodes.set(step.id, COLORS.visited);
+                if(step.parent !== undefined && step.parent !== null) {
+                    highlightedEdges.add(getEdgeKey(step.parent, step.id));
+                }
+            } else if (step.type === 'process') {
+                highlightedNodes.set(step.id, COLORS.processing);
+            } else if (step.type === 'done') {
+                highlightedNodes.set(step.id, COLORS.visited);
+            }
+
+            draw();
+            setTimeout(process, 600);
+        };
+        process();
+    }
+
+    function getEdgeKey(u, v) {
+        if(isDirected) return `${u}-${v}`;
+        return u < v ? `${u}-${v}` : `${v}-${u}`;
+    }
+
+    // --- Drawing ---
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw Edges
+        // We draw from stored edges list
+        // Note: For undirected, we store {u,v}. For directed {u,v}.
+        // Visualization handles the arrow.
+        edges.forEach(e => {
+            const u = nodes.find(n => n.id === e.u);
+            const v = nodes.find(n => n.id === e.v);
+            if(!u || !v) return;
+
+            let color = COLORS.edge;
+            let width = 2;
+
+            // Highlight from hover
+            if(hoverEdge) {
+                if (isDirected) {
+                    if(e.u === hoverEdge.u && e.v === hoverEdge.v) { color = COLORS.edgeHl; width=4; }
+                } else {
+                    const match = (e.u === hoverEdge.u && e.v === hoverEdge.v) || (e.u === hoverEdge.v && e.v === hoverEdge.u);
+                    if(match) { color = COLORS.edgeHl; width=4; }
+                }
+            }
+            
+            // Highlight from animation
+            const key = isDirected ? `${e.u}-${e.v}` : (e.u < e.v ? `${e.u}-${e.v}` : `${e.v}-${e.u}`);
+            if(highlightedEdges.has(key)) { color = COLORS.visited; width = 3; }
+
+            drawEdge(u, v, color, width);
+        });
+
+        // Temp Edge
+        if(mode === 'edge' && isDragging && edgeStartNode) {
+            drawEdge(edgeStartNode, {x: mouseX, y: mouseY}, COLORS.edgeHl, 2);
+        }
+
+        // Draw Nodes
+        nodes.forEach(n => {
+            let fill = COLORS.nodeFill;
+            if(highlightedNodes.has(n.id)) fill = highlightedNodes.get(n.id);
+            if(n === dragNode) fill = COLORS.edgeHl;
+            
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, NODE_RADIUS, 0, Math.PI*2);
+            ctx.fillStyle = fill;
+            ctx.fill();
+            ctx.strokeStyle = COLORS.nodeBorder;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = COLORS.text;
+            ctx.font = 'bold 14px Inter';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(n.id, n.x, n.y);
+        });
+    }
+
+    function drawEdge(u, v, color, width) {
+        const dx = v.x - u.x;
+        const dy = v.y - u.y;
+        const dist = Math.hypot(dx, dy);
+        
+        // Self loop
+        if(dist < 1) {
+            ctx.beginPath();
+            ctx.arc(u.x - 20, u.y - 20, 20, 0, Math.PI*2); // circle loop
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.stroke();
+            return;
+        }
+
+        // Clip lines to circle radius
+        const angle = Math.atan2(dy, dx);
+        const startX = u.x + Math.cos(angle) * NODE_RADIUS;
+        const startY = u.y + Math.sin(angle) * NODE_RADIUS;
+        const endX = v.x - Math.cos(angle) * NODE_RADIUS;
+        const endY = v.y - Math.sin(angle) * NODE_RADIUS;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.stroke();
+
+        if(isDirected) {
+            const arrowSize = 10;
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - arrowSize * Math.cos(angle - Math.PI/6), endY - arrowSize * Math.sin(angle - Math.PI/6));
+            ctx.lineTo(endX - arrowSize * Math.cos(angle + Math.PI/6), endY - arrowSize * Math.sin(angle + Math.PI/6));
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+    }
+
+    function showStatus(msg) {
+        const el = document.getElementById('statusMessage');
+        el.innerText = msg; el.classList.add('show');
+        setTimeout(()=>el.classList.remove('show'), 2000);
+    }
+
+    // Startup
+    resizeCanvas();
+    showStatus("Interactive Graph Ready");
+
+</script>
 </body>
 </html>

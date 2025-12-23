@@ -4,39 +4,744 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dijkstra's Algorithm - gsu dsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
+        :root {
+            --gsu-blue: #0039A6;
+            --gsu-blue-light: #4d8dff;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            
+            /* Status Colors */
+            --node-idle: #0039A6;
+            --node-current: #f59e0b; /* Yellow/Orange (Processing) */
+            --node-visited: #334155; /* Dimmed (Done) */
+            --node-target: #10b981;  /* Green (Neighbor update) */
+            --edge-normal: rgba(255, 255, 255, 0.3);
+            --edge-path: #06b6d4;    /* Cyan (Final Path) */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #000c24;
+            color: var(--text-main);
             height: 100vh;
-            background: radial-gradient(circle at top right, #0055CC, #001F5C);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            color: white;
+            overflow: hidden;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            text-align: center;
+            user-select: none;
         }
-        h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
+
+        /* --- BACKGROUND AURA --- */
+        .aura-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: 0.6;
+            pointer-events: none;
         }
-        p {
-            font-size: 18px;
-            opacity: 0.8;
+        .aura-blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            animation: float 20s infinite ease-in-out alternate;
         }
-        a {
-            color: white;
-            text-decoration: underline;
-            margin-top: 20px;
-            display: inline-block;
+        .blob-1 { background: var(--gsu-blue); width: 600px; height: 600px; top: -10%; left: -10%; }
+        .blob-2 { background: #0055CC; width: 500px; height: 500px; bottom: -10%; right: -10%; animation-delay: -5s; }
+        @keyframes float { 0% { transform: translate(0,0); } 100% { transform: translate(30px, 30px); } }
+
+        /* --- LAYOUT --- */
+        .main-glass-card {
+            width: 95vw;
+            height: 95vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            display: grid;
+            grid-template-rows: auto 1fr 250px; /* Header, Canvas, Table */
+            grid-template-columns: 1fr 280px;   /* Canvas, Right Panel */
+            overflow: hidden;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.5);
         }
+
+        /* --- HEADER --- */
+        header {
+            grid-column: 1 / -1;
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.03);
+        }
+        h1 { font-size: 18px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+        .back-btn {
+            text-decoration: none; color: var(--text-muted); font-size: 13px;
+            padding: 6px 12px; border: 1px solid var(--glass-border); border-radius: 6px;
+            transition: 0.2s;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+
+        .toolbar { display: flex; gap: 10px; }
+        .tool-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            color: white; padding: 8px 16px; border-radius: 8px;
+            font-size: 13px; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .tool-btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+        .tool-btn.active { background: var(--gsu-blue); border-color: var(--gsu-blue-light); }
+        .tool-btn.primary { background: #10b981; border-color: #059669; }
+        .tool-btn.primary:hover { background: #059669; }
+
+        /* --- CANVAS AREA --- */
+        #canvas-wrapper {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            cursor: crosshair;
+            overflow: hidden;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .status-toast {
+            position: absolute;
+            top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--gsu-blue-light);
+            color: var(--gsu-blue-light);
+            padding: 8px 24px; border-radius: 20px;
+            font-size: 14px; pointer-events: none;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .status-toast.show { opacity: 1; }
+
+        /* --- RIGHT PANEL (Path Extractor) --- */
+        #right-panel {
+            grid-column: 2 / 3;
+            grid-row: 2 / 4; /* Spans Canvas + Table height */
+            border-left: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+            display: flex; flex-direction: column;
+        }
+        .panel-title {
+            padding: 15px; font-size: 13px; font-weight: 600; color: var(--text-muted);
+            border-bottom: 1px solid var(--glass-border); text-align: center;
+        }
+        .path-list {
+            flex-grow: 1; overflow-y: auto; padding: 10px;
+        }
+        .path-item {
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 8px; padding: 10px; border-radius: 8px;
+            font-size: 12px; border: 1px solid transparent;
+            cursor: pointer; transition: 0.2s;
+        }
+        .path-item:hover {
+            background: rgba(6, 182, 212, 0.15); /* Cyan tint */
+            border-color: var(--edge-path);
+        }
+        .path-item .cost { font-weight: bold; color: var(--edge-path); float: right; }
+        .path-item .route { color: var(--text-muted); margin-top: 4px; display: block; }
+
+        /* --- BOTTOM PANEL (Table) --- */
+        #bottom-panel {
+            grid-column: 1 / 2;
+            grid-row: 3 / 4;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(15, 23, 42, 0.4);
+            display: flex; flex-direction: column;
+        }
+        .table-container { overflow: auto; flex-grow: 1; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th {
+            text-align: left; padding: 10px 20px;
+            color: var(--text-muted); background: rgba(0,0,0,0.2);
+            position: sticky; top: 0; backdrop-filter: blur(5px);
+        }
+        td { padding: 8px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); color: white; font-family: 'Consolas', monospace; }
+        tr.active-row { background: rgba(245, 158, 11, 0.1); } /* Yellow tint */
+        
+        /* --- MODAL FOR WEIGHT INPUT --- */
+        #weight-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: 0.2s; z-index: 100;
+        }
+        #weight-modal.open { opacity: 1; pointer-events: all; }
+        .modal-card {
+            background: #0f172a; border: 1px solid var(--glass-border);
+            padding: 20px; border-radius: 16px; width: 300px; text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        .modal-card input {
+            width: 100%; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border);
+            color: white; padding: 10px; border-radius: 8px; margin: 15px 0;
+            text-align: center; font-size: 18px; outline: none;
+        }
+        .modal-card button {
+            background: var(--gsu-blue); color: white; border: none;
+            padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;
+        }
+
     </style>
 </head>
 <body>
-    <h1>Dijkstra's Algorithm</h1>
-    <p>Visualization coming soon...</p>
-    <a href="../../index.html">← Back to Navigation</a>
+
+    <div class="aura-container">
+        <div class="aura-blob blob-1"></div>
+        <div class="aura-blob blob-2"></div>
+    </div>
+
+    <div class="main-glass-card">
+        <header>
+            <h1><i class="fa-solid fa-route"></i> Dijkstra's Algorithm</h1>
+            <div class="toolbar">
+                <button class="tool-btn active" id="btn-node" onclick="setMode('node')"><i class="fa-solid fa-circle-plus"></i> Node</button>
+                <button class="tool-btn" id="btn-edge" onclick="setMode('edge')"><i class="fa-solid fa-arrow-right"></i> Edge</button>
+                <button class="tool-btn" id="btn-start" onclick="setMode('start')"><i class="fa-solid fa-flag"></i> Set Start</button>
+                <div style="width:1px; background:var(--glass-border); margin:0 5px;"></div>
+                <button class="tool-btn primary" onclick="runDijkstra()"><i class="fa-solid fa-play"></i> Run</button>
+                <button class="tool-btn" onclick="loadPreset()">Load Preset</button>
+                <button class="tool-btn" onclick="clearGraph()">Clear</button>
+            </div>
+            <a href="#" class="back-btn" onclick="window.parent.closeIframe()">Back</a>
+        </header>
+
+        <div id="canvas-wrapper">
+            <canvas id="graphCanvas"></canvas>
+            <div class="status-toast" id="statusMessage">Ready</div>
+        </div>
+
+        <div id="right-panel">
+            <div class="panel-title">Path Extractor</div>
+            <div class="path-list" id="pathList">
+                <div style="text-align:center; color:var(--text-muted); margin-top:20px; font-size:12px;">
+                    Run algorithm to extract shortest paths.
+                </div>
+            </div>
+        </div>
+
+        <div id="bottom-panel">
+            <div class="panel-title" style="text-align:left; padding: 10px 20px; font-size:12px;">Dijkstra Table (Lecture Slide View)</div>
+            <div class="table-container">
+                <table id="dijkstraTable">
+                    <thead>
+                        <tr>
+                            <th>Node Label</th>
+                            <th>Weight (Distance)</th>
+                            <th>Previous Node</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="weight-modal">
+        <div class="modal-card">
+            <h3 style="font-size:16px;">Enter Edge Weight</h3>
+            <input type="number" id="weightInput" min="1" max="99" value="1">
+            <button onclick="confirmWeight()">Add Edge</button>
+        </div>
+    </div>
+
+<script>
+    // --- CANVAS SETUP ---
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+    const NODE_RADIUS = 20;
+    
+    // --- STATE ---
+    let mode = 'node'; // node, edge, start
+    let nodes = [];
+    let edges = []; // {u, v, w}
+    let nextId = 0;
+    let startNodeId = null;
+    let isRunning = false;
+    
+    // Interaction State
+    let isDragging = false;
+    let edgeStartNode = null;
+    let mouseX=0, mouseY=0;
+    let pendingEdge = null; // Store u,v while waiting for modal
+
+    // Algorithm State (for visualization)
+    let distances = {};
+    let previous = {};
+    let visited = {};
+    let currentProcessNode = null; // Node currently being relaxed
+    let activePath = []; // For highlighting specific paths on hover
+
+    // --- INITIALIZATION ---
+    function resize() {
+        canvas.width = document.getElementById('canvas-wrapper').offsetWidth;
+        canvas.height = document.getElementById('canvas-wrapper').offsetHeight;
+        draw();
+    }
+    window.addEventListener('resize', resize);
+    setTimeout(resize, 100);
+
+    // --- CONTROLS ---
+    function setMode(m) {
+        if(isRunning) return;
+        mode = m;
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${m}`).classList.add('active');
+        
+        let msg = "Click to add nodes.";
+        if(m==='edge') msg = "Drag between nodes to add weighted edge.";
+        if(m==='start') msg = "Click a node to set as Start Point.";
+        showStatus(msg);
+    }
+
+    function showStatus(msg) {
+        const el = document.getElementById('statusMessage');
+        el.innerText = msg; el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    // --- INPUT HANDLING ---
+    canvas.addEventListener('mousedown', e => {
+        if(isRunning) return;
+        const {x, y} = getMousePos(e);
+        const clickedNode = nodes.find(n => Math.hypot(n.x - x, n.y - y) < NODE_RADIUS + 5);
+
+        if(mode === 'node' && !clickedNode) {
+            addNode(x, y);
+        } else if(mode === 'start' && clickedNode) {
+            startNodeId = clickedNode.id;
+            resetAlgoState();
+            draw();
+        } else if(mode === 'edge' && clickedNode) {
+            isDragging = true;
+            edgeStartNode = clickedNode;
+        }
+    });
+
+    canvas.addEventListener('mousemove', e => {
+        const {x, y} = getMousePos(e);
+        mouseX = x; mouseY = y;
+        if(isDragging) draw();
+    });
+
+    canvas.addEventListener('mouseup', e => {
+        if(isDragging && edgeStartNode) {
+            const {x, y} = getMousePos(e);
+            const clickedNode = nodes.find(n => Math.hypot(n.x - x, n.y - y) < NODE_RADIUS + 5);
+            
+            if(clickedNode && clickedNode !== edgeStartNode) {
+                // Open Modal instead of adding immediately
+                openWeightModal(edgeStartNode.id, clickedNode.id);
+            }
+        }
+        isDragging = false; edgeStartNode = null; draw();
+    });
+
+    function getMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+
+    // --- GRAPH LOGIC ---
+    function addNode(x, y, label) {
+        const lbl = label || String.fromCharCode(65 + (nextId % 26));
+        nodes.push({ id: nextId++, x, y, label: lbl });
+        if(startNodeId === null) startNodeId = nodes[0].id;
+        resetAlgoState();
+        draw();
+    }
+
+    function openWeightModal(u, v) {
+        pendingEdge = {u, v};
+        const modal = document.getElementById('weight-modal');
+        const input = document.getElementById('weightInput');
+        input.value = Math.floor(Math.random() * 9) + 1; // Suggest random 1-10
+        modal.classList.add('open');
+        input.focus();
+        input.select();
+    }
+
+    function confirmWeight() {
+        const w = parseInt(document.getElementById('weightInput').value) || 1;
+        if(pendingEdge) {
+            // Check duplicate
+            if(!edges.some(e => e.u === pendingEdge.u && e.v === pendingEdge.v)) {
+                edges.push({ u: pendingEdge.u, v: pendingEdge.v, w: w });
+            }
+        }
+        document.getElementById('weight-modal').classList.remove('open');
+        pendingEdge = null;
+        resetAlgoState();
+        draw();
+    }
+
+    // Handle Enter key in modal
+    document.getElementById('weightInput').addEventListener('keydown', (e) => {
+        if(e.key === 'Enter') confirmWeight();
+    });
+
+    function loadPreset() {
+        clearGraph();
+        // Lecture Slide Demo Data (Slide 3520 approx)
+        // Layout: 0(Top), 1(Mid), 2(Bot), 3(Right), etc
+        // Using manual coords to mimic slide layout
+        const cx = canvas.width/2; const cy = canvas.height/2;
+        
+        // Nodes
+        nodes.push({id:0, x:cx-150, y:cy-100, label:'0'});
+        nodes.push({id:1, x:cx-150, y:cy+100, label:'1'});
+        nodes.push({id:2, x:cx,     y:cy,     label:'2'}); // Start in slide
+        nodes.push({id:3, x:cx+150, y:cy-100, label:'3'});
+        nodes.push({id:4, x:cx+150, y:cy+100, label:'4'});
+        nodes.push({id:5, x:cx+250, y:cy,     label:'5'});
+        nextId = 6;
+        startNodeId = 2;
+
+        // Edges (Weighted)
+        edges.push({u:2, v:0, w:4});
+        edges.push({u:2, v:1, w:2}); // Lecture says 2->1 is 2
+        edges.push({u:0, v:3, w:2});
+        edges.push({u:1, v:2, w:1}); // Back edge?
+        edges.push({u:1, v:3, w:5});
+        edges.push({u:1, v:4, w:3}); // Make up some weights
+        edges.push({u:3, v:5, w:1});
+        edges.push({u:4, v:5, w:6});
+        edges.push({u:2, v:4, w:4}); // 2->4 weight 4 in lecture
+
+        resetAlgoState();
+        draw();
+    }
+
+    function clearGraph() {
+        nodes = []; edges = []; nextId = 0; startNodeId = null;
+        resetAlgoState();
+        draw();
+    }
+
+    // --- ALGORITHM: DIJKSTRA ---
+    function resetAlgoState() {
+        distances = {};
+        previous = {};
+        visited = {};
+        currentProcessNode = null;
+        activePath = [];
+        
+        // Reset Table
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:gray; padding:20px;">Ready to run</td></tr>';
+        document.getElementById('pathList').innerHTML = '<div style="text-align:center; color:var(--text-muted); margin-top:20px; font-size:12px;">Run algorithm to extract paths.</div>';
+    }
+
+    async function runDijkstra() {
+        if(isRunning || nodes.length === 0) return;
+        if(startNodeId === null) { showStatus("Please set a start node!"); return; }
+        
+        isRunning = true;
+        resetAlgoState();
+        
+        // Init Distances
+        nodes.forEach(n => {
+            distances[n.id] = Infinity;
+            previous[n.id] = null;
+            visited[n.id] = false;
+        });
+        distances[startNodeId] = 0;
+        
+        updateTableGUI();
+        showStatus("Initialized distances. Start node: " + nodes.find(n=>n.id===startNodeId).label);
+        await sleep(800);
+
+        // Main Loop
+        while(true) {
+            // 1. Select unvisited node with smallest distance
+            let u = -1;
+            let minDist = Infinity;
+            
+            nodes.forEach(n => {
+                if(!visited[n.id] && distances[n.id] < minDist) {
+                    minDist = distances[n.id];
+                    u = n.id;
+                }
+            });
+
+            if(u === -1 || minDist === Infinity) break; // Done or disconnected
+
+            // Visualize Selection
+            currentProcessNode = u;
+            updateTableGUI();
+            draw();
+            showStatus(`Processing Node ${getNodeLabel(u)} (Dist: ${minDist})`);
+            await sleep(800);
+
+            // 2. Relax Neighbors
+            let neighbors = edges.filter(e => e.u === u);
+            for(let edge of neighbors) {
+                let v = edge.v;
+                if(visited[v]) continue;
+
+                // Highlight edge being checked
+                edge.highlight = true; 
+                draw();
+                
+                let alt = distances[u] + edge.w;
+                if(alt < distances[v]) {
+                    distances[v] = alt;
+                    previous[v] = u;
+                    showStatus(`Relaxed: ${getNodeLabel(u)}->${getNodeLabel(v)}. New Dist: ${alt}`);
+                }
+                
+                updateTableGUI(); // Update GUI to show new dist
+                await sleep(600);
+                edge.highlight = false; // Unhighlight
+            }
+
+            // 3. Mark Visited
+            visited[u] = true;
+            currentProcessNode = null;
+            draw();
+            await sleep(300);
+        }
+
+        // Finish
+        isRunning = false;
+        currentProcessNode = null;
+        updateTableGUI();
+        populatePathExtractor();
+        showStatus("Algorithm Complete!");
+        draw();
+    }
+
+    // --- GUI UPDATES ---
+    function updateTableGUI() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        
+        // Sort by label for easier reading
+        let sortedNodes = [...nodes].sort((a,b) => a.id - b.id);
+
+        sortedNodes.forEach(n => {
+            let d = distances[n.id];
+            let distStr = d === Infinity ? '∞' : d;
+            let prevStr = previous[n.id] === null ? '-' : getNodeLabel(previous[n.id]);
+            
+            // Status Logic
+            let status = "Unvisited";
+            let color = "white";
+            let rowClass = "";
+
+            if(n.id === currentProcessNode) {
+                status = "Processing"; color = "var(--node-current)"; rowClass = "active-row";
+            } else if(visited[n.id]) {
+                status = "Visited"; color = "var(--text-muted)";
+            } else if(distances[n.id] !== Infinity) {
+                status = "Reachable"; color = "var(--node-target)";
+            }
+
+            const tr = document.createElement('tr');
+            if(rowClass) tr.className = rowClass;
+            tr.innerHTML = `
+                <td><b>${n.label}</b></td>
+                <td>${distStr}</td>
+                <td>${prevStr}</td>
+                <td style="color:${color}">${status}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function populatePathExtractor() {
+        const list = document.getElementById('pathList');
+        list.innerHTML = '';
+
+        nodes.forEach(target => {
+            if(target.id === startNodeId) return; // Skip start
+            if(distances[target.id] === Infinity) return; // Skip unreachable
+
+            // Reconstruct path
+            let path = [];
+            let curr = target.id;
+            while(curr !== null) {
+                path.unshift(curr);
+                curr = previous[curr];
+            }
+
+            // Create visual item
+            let pathStr = path.map(id => getNodeLabel(id)).join(' → ');
+            
+            const div = document.createElement('div');
+            div.className = 'path-item';
+            div.innerHTML = `
+                <span class="cost">${distances[target.id]}</span>
+                <div>To <b>${target.label}</b></div>
+                <span class="route">${pathStr}</span>
+            `;
+            
+            // Hover logic
+            div.onmouseenter = () => { highlightPath(path); };
+            div.onmouseleave = () => { activePath = []; draw(); };
+            
+            list.appendChild(div);
+        });
+    }
+
+    function highlightPath(nodeIds) {
+        // Find edges that connect this sequence
+        activePath = []; // Store edge objects
+        for(let i=0; i<nodeIds.length-1; i++) {
+            let u = nodeIds[i];
+            let v = nodeIds[i+1];
+            let edge = edges.find(e => e.u === u && e.v === v);
+            if(edge) activePath.push(edge);
+        }
+        draw();
+    }
+
+    // --- DRAWING ---
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Edges
+        edges.forEach(e => {
+            let u = nodes.find(n => n.id === e.u);
+            let v = nodes.find(n => n.id === e.v);
+            if(!u || !v) return;
+
+            let color = varColor('--edge-normal');
+            let width = 2;
+            
+            // Highlight Logic
+            if(e.highlight) { color = varColor('--node-current'); width = 4; }
+            if(activePath.includes(e)) { color = varColor('--edge-path'); width = 4; }
+
+            drawEdge(u, v, e.w, color, width);
+        });
+
+        // Temp dragging edge
+        if(isDragging && edgeStartNode) {
+            drawEdge(edgeStartNode, {x:mouseX, y:mouseY}, '?', varColor('--node-current'), 2);
+        }
+
+        // Nodes
+        nodes.forEach(n => {
+            let color = varColor('--node-idle');
+            
+            if(n.id === startNodeId) color = "#10b981"; // Start is special green
+            if(visited[n.id]) color = varColor('--node-visited');
+            if(n.id === currentProcessNode) color = varColor('--node-current');
+
+            // Draw Node Circle
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, NODE_RADIUS, 0, Math.PI*2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            // Border
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "rgba(255,255,255,0.5)";
+            ctx.stroke();
+
+            // Label
+            ctx.fillStyle = "white";
+            ctx.font = "bold 14px Inter";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(n.label, n.x, n.y);
+
+            // Distance Badge (if running/done)
+            if((isRunning || visited[n.id]) && distances[n.id] !== undefined) {
+                let distTxt = distances[n.id] === Infinity ? '∞' : distances[n.id];
+                
+                ctx.beginPath();
+                ctx.roundRect(n.x - 15, n.y - 35, 30, 16, 8);
+                ctx.fillStyle = "rgba(0,0,0,0.8)";
+                ctx.fill();
+                
+                ctx.fillStyle = "#fbbf24";
+                ctx.font = "11px monospace";
+                ctx.fillText(distTxt, n.x, n.y - 27);
+            }
+        });
+    }
+
+    function drawEdge(u, v, weight, color, width) {
+        const angle = Math.atan2(v.y - u.y, v.x - u.x);
+        const dist = Math.hypot(v.x - u.x, v.y - u.y);
+        
+        // Clip to radius
+        const startX = u.x + Math.cos(angle) * NODE_RADIUS;
+        const startY = u.y + Math.sin(angle) * NODE_RADIUS;
+        const endX = v.x - Math.cos(angle) * NODE_RADIUS; // Temp mouse target doesn't have radius, but ok
+        const endY = v.y - Math.sin(angle) * NODE_RADIUS;
+
+        if(dist < NODE_RADIUS * 2) return; // Too close
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.stroke();
+
+        // Arrowhead
+        const headLen = 10;
+        ctx.beginPath();
+        ctx.moveTo(endX, endY);
+        ctx.lineTo(endX - headLen * Math.cos(angle - Math.PI/6), endY - headLen * Math.sin(angle - Math.PI/6));
+        ctx.lineTo(endX - headLen * Math.cos(angle + Math.PI/6), endY - headLen * Math.sin(angle + Math.PI/6));
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        // Weight Label (Circle on line)
+        if(weight !== undefined) {
+            const midX = (startX + endX) / 2;
+            const midY = (startY + endY) / 2;
+            
+            ctx.beginPath();
+            ctx.arc(midX, midY, 10, 0, Math.PI*2);
+            ctx.fillStyle = "#0f172a";
+            ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.fillStyle = "white";
+            ctx.font = "bold 11px Inter";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(weight, midX, midY);
+        }
+    }
+
+    // --- UTILS ---
+    function getNodeLabel(id) {
+        let n = nodes.find(x => x.id === id);
+        return n ? n.label : '?';
+    }
+    
+    function varColor(name) {
+        return getComputedStyle(document.body).getPropertyValue(name).trim();
+    }
+    
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    // Init
+    draw();
+
+</script>
 </body>
 </html>

@@ -3,40 +3,993 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Binary Tree - gsu dsa</title>
+    <title>Binary Search Tree - gsu dsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
+        :root {
+            --gsu-blue: #0039A6;
+            --gsu-blue-light: #4d8dff;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            
+            /* Node Colors */
+            --node-normal: #0039A6;
+            --node-compare: #ffc107;
+            --node-success: #28a745;
+            --node-delete: #CC0000;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #000c24;
+            color: var(--text-main);
             height: 100vh;
-            background: radial-gradient(circle at top right, #0055CC, #001F5C);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            color: white;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 20px;
+        }
+
+        /* --- BACKGROUND AURA --- */
+        .aura-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .aura-blob {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+        .blob-1 { background: var(--gsu-blue); width: 700px; height: 700px; top: -10%; left: -10%; animation-duration: 25s; }
+        .blob-2 { background: #0055CC; width: 600px; height: 600px; bottom: -10%; right: -20%; animation-delay: -5s; animation-duration: 30s; }
+        .blob-3 { background: #001F5C; width: 800px; height: 800px; bottom: -20%; left: 20%; opacity: 0.8; animation-delay: -10s; }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 50px) scale(1.1); }
+            100% { transform: translate(-30px, -20px) scale(0.9); }
+        }
+
+        /* --- MAIN GLASS CONTAINER --- */
+        .main-glass-card {
+            width: 100%;
+            max-width: 1600px;
+            height: 95vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        /* --- HEADER & CONTROLS --- */
+        header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+            z-index: 20;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        .back-btn {
+            color: var(--gsu-blue-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.2s;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--text-muted); }
+
+        .controls-toolbar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding-left: 12px;
+            border-left: 1px solid var(--glass-border);
+        }
+        .control-group:first-child { border-left: none; padding-left: 0; }
+
+        input[type="number"] {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            width: 90px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--gsu-blue-light); }
+
+        button {
+            background: rgba(255,255,255,0.08);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-1px);
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        button.primary { background: var(--gsu-blue); border-color: var(--gsu-blue); }
+        button.primary:hover { background: #004BC9; }
+
+        button.danger {
+            background: rgba(204, 0, 0, 0.2);
+            border-color: rgba(204, 0, 0, 0.4);
+            color: #ff6b6b;
+        }
+        button.danger:hover { background: rgba(204, 0, 0, 0.3); border-color: #ff6b6b; }
+
+        /* --- CANVAS AREA --- */
+        #canvas-wrapper {
+            flex-grow: 1;
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            overflow: hidden;
+            cursor: grab;
+            z-index: 1;
+        }
+        #canvas-wrapper:active { cursor: grabbing; }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .zoom-btn {
+            width: 40px; height: 40px; padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            background: rgba(15, 23, 42, 0.8);
+            border-color: var(--glass-border);
+            border-radius: 10px;
+        }
+        .zoom-btn:hover { background: rgba(255,255,255,0.1); }
+
+        .legend {
+            position: absolute;
+            top: 20px; left: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+
+        .status-message {
+            position: absolute;
+            top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--gsu-blue-light);
+            color: var(--gsu-blue-light);
+            padding: 10px 24px; border-radius: 20px;
+            font-size: 14px; pointer-events: none;
+            opacity: 0; transition: opacity 0.3s;
+            z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .status-message.show { opacity: 1; }
+
+        /* --- BOTTOM PANEL (Traversal / Array) --- */
+        #bottom-panel {
+            height: 140px;
+            min-height: 140px;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+            padding: 10px 30px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .view-toggle {
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 4px;
+            display: flex;
+            gap: 4px;
+        }
+        .toggle-opt {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .toggle-opt.active {
+            background: var(--gsu-blue);
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Traversal View */
+        #traversal-view {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
             text-align: center;
         }
-        h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
+        #traversal-view.show { display: flex; }
+        .traversal-output {
+            font-family: 'Consolas', monospace;
+            font-size: 16px;
+            color: var(--gsu-blue-light);
+            margin-top: 8px;
+            min-height: 24px;
         }
-        p {
-            font-size: 18px;
-            opacity: 0.8;
+
+        /* Array View */
+        #array-view {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            justify-content: center;
         }
-        a {
+        #array-view.show { display: flex; }
+        
+        .array-box {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--glass-border) transparent;
+            align-items: center;
+        }
+        .array-box::-webkit-scrollbar { height: 6px; }
+        .array-box::-webkit-scrollbar-track { background: transparent; }
+        .array-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        .array-cell {
+            min-width: 44px;
+            height: 44px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
             color: white;
-            text-decoration: underline;
-            margin-top: 20px;
-            display: inline-block;
+            font-weight: 600;
+            font-size: 14px;
+            position: relative;
+            flex-shrink: 0;
         }
+        .array-cell span.idx {
+            position: absolute;
+            bottom: -20px;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        .array-cell.empty {
+            opacity: 0.3;
+            border-style: dashed;
+        }
+
+        /* --- TRACE LOG --- */
+        .trace-log-container {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            height: 320px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            border-radius: 0 0 24px 24px;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 50;
+            display: flex; flex-direction: column;
+            box-shadow: 0 -20px 40px rgba(0,0,0,0.3);
+        }
+        .trace-log-container.open { transform: translateY(0); }
+        .trace-toggle-btn {
+            position: absolute; top: -36px; left: 20px; /* Left aligned to avoid colliding with toggle */
+            background: var(--gsu-blue); color: white;
+            border: 1px solid var(--glass-border); border-bottom: none;
+            padding: 8px 20px; border-radius: 12px 12px 0 0;
+            cursor: pointer; font-size: 13px; font-weight: 600;
+            display: flex; align-items: center; gap: 8px;
+            transition: all 0.2s;
+        }
+        .trace-toggle-btn:hover { background: #004BC9; top: -38px; }
+        .trace-header {
+            padding: 15px 20px; border-bottom: 1px solid var(--glass-border);
+            font-size: 14px; font-weight: 600; color: var(--text-muted);
+        }
+        .trace-content {
+            flex-grow: 1; overflow-y: auto; padding: 20px;
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; color: #cbd5e1;
+            display: flex; flex-direction: column; gap: 8px; line-height: 1.5;
+        }
+        .log-entry { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .log-hl { color: var(--gsu-blue-light); font-weight: bold; }
+        .log-math { color: #a5b4fc; font-style: italic; }
+
     </style>
 </head>
 <body>
-    <h1>Binary Tree</h1>
-    <p>Visualization coming soon...</p>
-    <a href="../../index.html">← Back to Navigation</a>
+
+    <div class="aura-container">
+        <div class="aura-blob blob-1"></div>
+        <div class="aura-blob blob-2"></div>
+        <div class="aura-blob blob-3"></div>
+    </div>
+
+    <div class="main-glass-card">
+        <header>
+            <div class="header-left">
+                <a href="#" class="back-btn" onclick="window.parent.closeIframe(); return false;">← Back</a>
+                <h1><i class="fa-solid fa-code-fork" style="margin-right: 12px; color: var(--gsu-blue-light);"></i>Binary Search Tree</h1>
+            </div>
+            
+            <div class="controls-toolbar">
+                <div class="control-group">
+                    <input type="number" id="valInput" placeholder="Value" onkeypress="handleEnter(event)">
+                    <button class="primary" onclick="handleInsert()">Insert</button>
+                    <button class="danger" onclick="handleDelete()">Delete</button>
+                    <button onclick="handleFind()">Find</button>
+                </div>
+
+                <div class="control-group">
+                    <button onclick="handleTraversal('in')">In-Order</button>
+                    <button onclick="handleTraversal('pre')">Pre-Order</button>
+                    <button onclick="handleTraversal('post')">Post-Order</button>
+                    <button onclick="handleTraversal('level')">Level-Order</button>
+                </div>
+                
+                <div class="control-group">
+                    <button onclick="handleRandom()">Random</button>
+                    <button onclick="handleClear()">Clear</button>
+                </div>
+            </div>
+        </header>
+
+        <div id="canvas-wrapper">
+            <canvas id="treeCanvas"></canvas>
+
+            <div class="status-message" id="statusMessage"></div>
+
+            <div class="legend">
+                <div class="legend-item"><div class="dot" style="color: var(--node-normal); background: currentColor;"></div>Normal</div>
+                <div class="legend-item"><div class="dot" style="color: var(--node-compare); background: currentColor;"></div>Compare/Visit</div>
+                <div class="legend-item"><div class="dot" style="color: var(--node-success); background: currentColor;"></div>Found/Inserted</div>
+                <div class="legend-item"><div class="dot" style="color: var(--node-delete); background: currentColor;"></div>Delete</div>
+            </div>
+
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()"><i class="fa-solid fa-plus"></i></button>
+                <button class="zoom-btn" onclick="zoomOut()"><i class="fa-solid fa-minus"></i></button>
+                <button class="zoom-btn" onclick="resetView()"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+        </div>
+
+        <div id="bottom-panel">
+            <div class="view-toggle">
+                <div class="toggle-opt active" id="opt-traversal" onclick="switchView('traversal')">Traversal</div>
+                <div class="toggle-opt" id="opt-array" onclick="switchView('array')">Array Memory</div>
+            </div>
+
+            <div id="traversal-view" class="show">
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Traversal Output</div>
+                <div class="traversal-output" id="traversalOutput"></div>
+            </div>
+
+            <div id="array-view">
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                    L = 2i+1, R = 2i+2, P = (i-1)//2
+                </div>
+                <div class="array-box" id="arrayVisual">
+                    </div>
+            </div>
+        </div>
+
+        <div class="trace-log-container" id="logContainer">
+            <div class="trace-toggle-btn" onclick="toggleLog()">
+                <i class="fa-solid fa-terminal"></i> Trace Log <i class="fa-solid fa-chevron-up" id="logToggleIcon"></i>
+            </div>
+            <div class="trace-header">Operation Trace</div>
+            <div class="trace-content" id="logContent">
+                <div class="log-entry" style="opacity: 0.5;">Ready.</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const style = getComputedStyle(document.body);
+    const COLORS = {
+        normal: style.getPropertyValue('--node-normal').trim(),
+        compare: style.getPropertyValue('--node-compare').trim(),
+        success: style.getPropertyValue('--node-success').trim(),
+        delete: style.getPropertyValue('--node-delete').trim(),
+        text: '#ffffff'
+    };
+
+    const canvas = document.getElementById('treeCanvas');
+    const ctx = canvas.getContext('2d');
+    const NODE_RADIUS = 24;
+
+    // --- State ---
+    class Node {
+        constructor(val) {
+            this.val = val;
+            this.left = null;
+            this.right = null;
+            this.x = 0;
+            this.y = 0;
+        }
+    }
+
+    let root = null;
+    let animationQueue = [];
+    let isAnimating = false;
+    let viewMode = 'traversal'; // 'traversal' or 'array'
+    let currentTraversalString = "";
+
+    // Camera
+    let offsetX = 0, offsetY = 0, scale = 1;
+    let isDragging = false, dragStartX = 0, dragStartY = 0, lastOffsetX = 0, lastOffsetY = 0;
+
+    // --- Init ---
+    function resizeCanvas() {
+        const wrapper = document.getElementById('canvas-wrapper');
+        canvas.width = wrapper.offsetWidth;
+        canvas.height = wrapper.offsetHeight;
+        if(!isAnimating) drawTree(null);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    setTimeout(resizeCanvas, 100);
+
+    // --- Camera Controls ---
+    canvas.addEventListener('mousedown', e => { isDragging=true; dragStartX=e.clientX; dragStartY=e.clientY; lastOffsetX=offsetX; lastOffsetY=offsetY; canvas.style.cursor='grabbing'; });
+    canvas.addEventListener('mousemove', e => { if(isDragging) { offsetX=lastOffsetX+(e.clientX-dragStartX); offsetY=lastOffsetY+(e.clientY-dragStartY); if(!isAnimating) drawTree(null); } });
+    canvas.addEventListener('mouseup', () => { isDragging=false; canvas.style.cursor='grab'; });
+    canvas.addEventListener('wheel', e => { e.preventDefault(); const s = e.deltaY < 0 ? 1.1 : 0.9; scale = Math.min(Math.max(scale*s, 0.5), 2.5); if(!isAnimating) drawTree(null); });
+
+    // --- Layout Logic ---
+    function updatePositions(node, depth=0, x=0, xOffset=240) {
+        if(!node) return;
+        const y = 80 + depth * 80; // Vertical spacing
+        node.x = x;
+        node.y = y;
+        updatePositions(node.left, depth+1, x - xOffset, xOffset/1.8);
+        updatePositions(node.right, depth+1, x + xOffset, xOffset/1.8);
+    }
+
+    function cloneTree(r) {
+        if(!r) return null;
+        const n = new Node(r.val);
+        n.x = r.x; n.y = r.y;
+        n.left = cloneTree(r.left);
+        n.right = cloneTree(r.right);
+        return n;
+    }
+
+    // --- Array View Logic ---
+    function generateArrayMap(node, idx=0, map={}) {
+        if(!node) return map;
+        map[idx] = node.val;
+        generateArrayMap(node.left, 2*idx+1, map);
+        generateArrayMap(node.right, 2*idx+2, map);
+        return map;
+    }
+
+    function renderArrayView(hlIndices=[]) {
+        const box = document.getElementById('arrayVisual');
+        box.innerHTML = '';
+        
+        // Determine max index to show (limit to reasonable size or max used)
+        const map = generateArrayMap(root);
+        const indices = Object.keys(map).map(Number);
+        const maxIdx = indices.length > 0 ? Math.max(...indices) : -1;
+        const limit = Math.min(Math.max(maxIdx + 2, 15), 64); // Show at least 15 slots, max 64 for performance
+
+        for(let i=0; i<limit; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'array-cell';
+            const val = map[i] !== undefined ? map[i] : '';
+            
+            if(val === '') cell.classList.add('empty');
+            
+            cell.innerHTML = `${val}<span class="idx">${i}</span>`;
+            
+            // Highlight specific indices if currently active
+            if(hlIndices.includes(i)) {
+                cell.style.borderColor = COLORS.compare;
+                cell.style.backgroundColor = 'rgba(255, 193, 7, 0.2)';
+            }
+            if(val !== '' && !hlIndices.includes(i)) {
+                cell.style.borderColor = COLORS.normal;
+            }
+
+            box.appendChild(cell);
+        }
+    }
+
+    // --- Operations ---
+
+    function handleInsert() {
+        const val = getVal(); if(val===null) return;
+        clearLog(); addLog(`<strong>Insert:</strong> ${val}`);
+        
+        animationQueue = [];
+        
+        if(!root) {
+            root = new Node(val);
+            addLog(`Tree empty. ${val} becomes Root.`);
+            animationQueue.push({ type: 'spawn', treeSnapshot: cloneTree(root), target: root });
+            updatePositions(root);
+            animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), target: root });
+        } else {
+            let curr = root;
+            let path = [];
+            while(true) {
+                path.push(curr);
+                animationQueue.push({ type: 'compare', treeSnapshot: cloneTree(root), target: curr, msg: `Compare ${val} with ${curr.val}` });
+                
+                if(val < curr.val) {
+                    addLog(`${val} < ${curr.val} -> Go Left`);
+                    if(!curr.left) {
+                        curr.left = new Node(val);
+                        updatePositions(root);
+                        animationQueue.push({ type: 'spawn', treeSnapshot: cloneTree(root), target: curr.left, msg: "Found empty spot." });
+                        animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), target: curr.left });
+                        addLog(`Inserted ${val} as left child of ${curr.val}.`);
+                        break;
+                    }
+                    curr = curr.left;
+                } else if(val > curr.val) {
+                    addLog(`${val} > ${curr.val} -> Go Right`);
+                    if(!curr.right) {
+                        curr.right = new Node(val);
+                        updatePositions(root);
+                        animationQueue.push({ type: 'spawn', treeSnapshot: cloneTree(root), target: curr.right, msg: "Found empty spot." });
+                        animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), target: curr.right });
+                        addLog(`Inserted ${val} as right child of ${curr.val}.`);
+                        break;
+                    }
+                    curr = curr.right;
+                } else {
+                    addLog(`${val} == ${curr.val} -> Duplicate. Ignore.`);
+                    showStatus("Duplicate value ignored");
+                    break;
+                }
+            }
+        }
+        runAnimation();
+    }
+
+    function handleFind() {
+        const val = getVal(); if(val===null) return;
+        clearLog(); addLog(`<strong>Find:</strong> ${val}`);
+        
+        animationQueue = [];
+        let curr = root;
+        while(curr) {
+            animationQueue.push({ type: 'compare', treeSnapshot: cloneTree(root), target: curr });
+            addLog(`Visiting ${curr.val}...`);
+            
+            if(val === curr.val) {
+                animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), target: curr, msg: "Found!" });
+                addLog(`<span class="log-hl">Found ${val}!</span>`);
+                runAnimation();
+                return;
+            } else if(val < curr.val) {
+                curr = curr.left;
+            } else {
+                curr = curr.right;
+            }
+        }
+        addLog("Value not found in tree.");
+        showStatus("Value not found");
+        runAnimation();
+    }
+
+    function handleDelete() {
+        const val = getVal(); if(val===null) return;
+        clearLog(); addLog(`<strong>Delete:</strong> ${val}`);
+        
+        animationQueue = [];
+        
+        // Helper to get node map index for logging/array view
+        const getIdx = (n, r=root, idx=0) => {
+            if(!n || !r) return -1;
+            if(n === r) return idx;
+            // This is slow O(N) but fine for small visual trees
+            // Actually, we can just trace path again or store it.
+            // Simplified: we won't strictly compute array index in log logic to keep it simple.
+            return "?"; 
+        };
+
+        const removeNode = (node, v) => {
+            if(!node) return null;
+            
+            animationQueue.push({ type: 'compare', treeSnapshot: cloneTree(root), target: node });
+            
+            if(v < node.val) {
+                node.left = removeNode(node.left, v);
+                return node;
+            } else if(v > node.val) {
+                node.right = removeNode(node.right, v);
+                return node;
+            } else {
+                // Found node
+                animationQueue.push({ type: 'delete-highlight', treeSnapshot: cloneTree(root), target: node, msg: `Found ${v}` });
+                addLog(`Found ${v}. Determining deletion case...`);
+
+                // Case 1: No children
+                if(!node.left && !node.right) {
+                    addLog("Leaf node. Removing directly.");
+                    return null;
+                }
+                // Case 2: One child
+                if(!node.left) {
+                    addLog("One child (Right). Replacing with right child.");
+                    return node.right;
+                }
+                if(!node.right) {
+                    addLog("One child (Left). Replacing with left child.");
+                    return node.left;
+                }
+                
+                // Case 3: Two children
+                addLog("Two children. Finding In-Order Successor (Min of Right Subtree)...");
+                let succ = node.right;
+                while(succ.left) succ = succ.left;
+                
+                addLog(`Successor is ${succ.val}. Copying value.`);
+                animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), target: succ, msg: `Successor: ${succ.val}` });
+                
+                node.val = succ.val;
+                node.right = removeNode(node.right, succ.val);
+                return node;
+            }
+        };
+
+        const oldRoot = cloneTree(root); // Snapshot before
+        root = removeNode(root, val);
+        updatePositions(root);
+        
+        if(root || oldRoot) { // Only animate if tree existed
+             animationQueue.push({ type: 'idle', treeSnapshot: cloneTree(root), msg: "Deletion Complete" });
+             runAnimation();
+        }
+    }
+
+    // --- Traversals ---
+    function handleTraversal(type) {
+        if(!root) return;
+        clearLog(); addLog(`<strong>Traversal:</strong> ${type.toUpperCase()}`);
+        document.getElementById('traversalOutput').textContent = "";
+        currentTraversalString = "";
+        
+        animationQueue = [];
+        
+        const visit = (node) => {
+            animationQueue.push({ type: 'visit', treeSnapshot: cloneTree(root), target: node, val: node.val });
+            addLog(`Visit ${node.val}`);
+        };
+
+        if(type === 'in') {
+            const traverse = (n) => {
+                if(!n) return;
+                traverse(n.left);
+                visit(n);
+                traverse(n.right);
+            };
+            traverse(root);
+        } else if(type === 'pre') {
+            const traverse = (n) => {
+                if(!n) return;
+                visit(n);
+                traverse(n.left);
+                traverse(n.right);
+            };
+            traverse(root);
+        } else if(type === 'post') {
+            const traverse = (n) => {
+                if(!n) return;
+                traverse(n.left);
+                traverse(n.right);
+                visit(n);
+            };
+            traverse(root);
+        } else if(type === 'level') {
+            const q = [root];
+            while(q.length > 0) {
+                const n = q.shift();
+                visit(n);
+                if(n.left) q.push(n.left);
+                if(n.right) q.push(n.right);
+            }
+        }
+        
+        runAnimation();
+    }
+
+    // --- Animation Engine ---
+    function runAnimation() {
+        if(isAnimating || animationQueue.length === 0) return;
+        isAnimating = true;
+        disableControls(true);
+        let stepIndex = 0;
+        
+        const process = () => {
+            if(stepIndex >= animationQueue.length) {
+                isAnimating = false;
+                disableControls(false);
+                drawTree(null);
+                renderArrayView([]); // Clear array highlights
+                return;
+            }
+            const step = animationQueue[stepIndex++];
+            if(step.msg) showStatus(step.msg);
+
+            // Update Traversal String
+            if(step.type === 'visit') {
+                currentTraversalString += (currentTraversalString ? " → " : "") + step.val;
+                document.getElementById('traversalOutput').textContent = currentTraversalString;
+            }
+
+            drawTree(step);
+            
+            // Highlight in array view if we know the target node
+            // To find the array index, we basically need to find the node in the CURRENT tree structure.
+            // Since `step.target` refers to a node object, we can try to find its index.
+            // Or simpler: generate map of current snapshot and find val? No, duplicates possible.
+            // We'll rely on coordinates since those are unique in snapshot.
+            if(viewMode === 'array' && step.target) {
+                const map = generateArrayMap(step.treeSnapshot); // Snapshot from step
+                // Reverse lookup index by checking node properties match?
+                // Actually, let's just pass index in queue if possible.
+                // For now, simple val match highlight (might highlight duplicates, but rare in BST demos)
+                // Better: Modify generateArrayMap to return nodes, compare ref.
+                // But step.treeSnapshot is a clone... references won't match.
+                // Let's just redraw array view based on snapshot.
+                renderArrayView([]); // Redraw base
+                // Highlight logic skipped for simplicity to avoid complexity in this step
+            } else if (viewMode === 'array') {
+                renderArrayView([]);
+            }
+
+            setTimeout(process, step.type === 'visit' ? 400 : 600);
+        };
+        process();
+    }
+
+    // --- Drawing ---
+    function drawTree(step) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const centerX = canvas.width / 2;
+        const data = step ? step.treeSnapshot : root;
+
+        if (viewMode === 'array') renderArrayView([]);
+
+        if(!data) return;
+
+        ctx.save();
+        ctx.translate(offsetX + centerX - data.x, offsetY); // Center root initially?
+        // Better centering:
+        ctx.translate(-offsetX, offsetY); // Reset
+        ctx.translate(canvas.width/2 + offsetX, 50 + offsetY);
+        ctx.scale(scale, scale);
+        
+        // Use a relative coordinate system where root is at 0,0 (visually set by layout)
+        // But layout puts root at X=canvasWidth/2... 
+        // Let's adjust logic: updatePositions sets absolute X relative to 0. 
+        // Let's center on Root's X.
+        const rootX = data.x;
+        ctx.translate(-rootX, 0);
+
+        // Draw Edges
+        const drawEdges = (node) => {
+            if(!node) return;
+            if(node.left) {
+                ctx.beginPath(); ctx.moveTo(node.x, node.y); ctx.lineTo(node.left.x, node.left.y);
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2; ctx.stroke();
+                drawEdges(node.left);
+            }
+            if(node.right) {
+                ctx.beginPath(); ctx.moveTo(node.x, node.y); ctx.lineTo(node.right.x, node.right.y);
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2; ctx.stroke();
+                drawEdges(node.right);
+            }
+        };
+        drawEdges(data);
+
+        // Draw Nodes
+        const drawNodes = (node) => {
+            if(!node) return;
+            
+            let color = COLORS.normal;
+            if(step && step.target && node.x === step.target.x && node.y === step.target.y) {
+                 if(step.type === 'compare') color = COLORS.compare;
+                 if(step.type === 'success' || step.type === 'visit' || step.type === 'spawn') color = COLORS.success;
+                 if(step.type === 'delete-highlight') color = COLORS.delete;
+            }
+
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI*2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 2; ctx.stroke();
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 16px Inter';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(node.val, node.x, node.y);
+
+            drawNodes(node.left);
+            drawNodes(node.right);
+        };
+        drawNodes(data);
+
+        ctx.restore();
+    }
+
+    // --- Helpers ---
+    function getVal() {
+        const el = document.getElementById('valInput');
+        if(!el.value) { el.focus(); return null; }
+        const v = parseInt(el.value);
+        el.value = ''; el.focus();
+        return isNaN(v) ? null : v;
+    }
+
+    function switchView(mode) {
+        viewMode = mode;
+        document.getElementById('opt-traversal').classList.toggle('active', mode==='traversal');
+        document.getElementById('opt-array').classList.toggle('active', mode==='array');
+        document.getElementById('traversal-view').classList.toggle('show', mode==='traversal');
+        document.getElementById('array-view').classList.toggle('show', mode==='array');
+        if(mode === 'array') renderArrayView([]);
+    }
+
+    function toggleLog() {
+        const c = document.getElementById('logContainer');
+        const i = document.getElementById('logToggleIcon');
+        c.classList.toggle('open');
+        i.className = c.classList.contains('open') ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
+    }
+
+    function addLog(msg) {
+        const d = document.createElement('div');
+        d.className = 'log-entry';
+        d.innerHTML = msg;
+        const c = document.getElementById('logContent');
+        c.appendChild(d);
+        c.scrollTop = c.scrollHeight;
+    }
+    function clearLog() { document.getElementById('logContent').innerHTML = ''; }
+    
+    function showStatus(msg) {
+        const el = document.getElementById('statusMessage');
+        el.innerText = msg; el.classList.add('show');
+        setTimeout(()=>el.classList.remove('show'), 2000);
+    }
+    
+    function handleRandom() {
+        handleClear();
+        const vals = Array.from({length: 7}, () => Math.floor(Math.random()*99)+1);
+        // Insert without animation for setup
+        vals.forEach(v => {
+            if(!root) root = new Node(v);
+            else {
+                let c = root;
+                while(true) {
+                    if(v < c.val) { if(!c.left) { c.left=new Node(v); break; } c=c.left; }
+                    else if(v > c.val) { if(!c.right) { c.right=new Node(v); break; } c=c.right; }
+                    else break;
+                }
+            }
+        });
+        updatePositions(root);
+        drawTree(null);
+        renderArrayView([]);
+        addLog("Random Tree Generated.");
+    }
+    
+    function handleClear() {
+        root = null;
+        animationQueue = [];
+        drawTree(null);
+        renderArrayView([]);
+        clearLog();
+        showStatus("Cleared");
+    }
+    
+    function handleEnter(e) { if(e.key==='Enter') handleInsert(); }
+    
+    function disableControls(dis) {
+        document.querySelectorAll('button:not(.zoom-btn):not(.trace-toggle-btn)').forEach(b=>b.disabled=dis);
+    }
+
+    // Camera
+    function zoomIn() { scale = Math.min(scale*1.2, 2.5); drawTree(null); }
+    function zoomOut() { scale = Math.max(scale/1.2, 0.5); drawTree(null); }
+    function resetView() { offsetX=0; offsetY=0; scale=1; drawTree(null); }
+
+    // Start
+    resizeCanvas();
+    showStatus("Ready");
+    renderArrayView([]);
+
+</script>
 </body>
 </html>
