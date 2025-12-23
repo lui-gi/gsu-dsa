@@ -608,6 +608,9 @@
     function executeRotation() {
         if (!pendingRotationType) return;
 
+        // Disable button immediately to prevent double-clicks
+        document.getElementById('rotateBtn').disabled = true;
+
         // Hide button and update message
         showRotateButton(false);
         showStatus(`Performing ${pendingRotationType} rotation...`);
@@ -884,6 +887,8 @@
             if(step.type === 'await-rotation') {
                 isWaitingForRotation = true;
                 showRotateButton(true);
+                // Enable the Rotate button (it was disabled by disableControls)
+                document.getElementById('rotateBtn').disabled = false;
                 drawTree(step);
 
                 // Store callback to resume animation
