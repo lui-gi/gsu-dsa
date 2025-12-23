@@ -250,58 +250,14 @@
             position: relative;
         }
 
-        .view-toggle {
-            position: absolute;
-            top: -35px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 4px;
-            display: flex;
-            gap: 4px;
-        }
-        .toggle-opt {
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            cursor: pointer;
-            color: var(--text-muted);
-            transition: all 0.2s;
-        }
-        .toggle-opt.active {
-            background: var(--gsu-blue);
-            color: white;
-            font-weight: 600;
-        }
-
-        /* Traversal View */
-        #traversal-view {
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            height: 100%;
-            text-align: center;
-        }
-        #traversal-view.show { display: flex; }
-        .traversal-output {
-            font-family: 'Consolas', monospace;
-            font-size: 16px;
-            color: var(--gsu-blue-light);
-            margin-top: 8px;
-            min-height: 24px;
-        }
-
         /* Stats View */
         #stats-view {
-            display: none;
+            display: flex;
             height: 100%;
             justify-content: center;
             align-items: center;
             gap: 40px;
         }
-        #stats-view.show { display: flex; }
         
         .stat-card {
             background: rgba(255, 255, 255, 0.05);
@@ -352,14 +308,7 @@
                 </div>
 
                 <div class="control-group">
-                    <button onclick="handleTraversal('in')">In-Order</button>
-                    <button onclick="handleTraversal('pre')">Pre-Order</button>
-                    <button onclick="handleTraversal('post')">Post-Order</button>
-                </div>
-                
-                <div class="control-group">
                     <button onclick="handleRandom()">Random</button>
-                    <button onclick="handleWorstCase()" title="Generates 1, 2, 3... to force rotations">Worst Case</button>
                     <button onclick="handleClear()">Clear</button>
                 </div>
             </div>
@@ -385,17 +334,7 @@
         </div>
 
         <div id="bottom-panel">
-            <div class="view-toggle">
-                <div class="toggle-opt active" id="opt-stats" onclick="switchView('stats')">Tree Stats</div>
-                <div class="toggle-opt" id="opt-traversal" onclick="switchView('traversal')">Traversal</div>
-            </div>
-
-            <div id="traversal-view">
-                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Traversal Output</div>
-                <div class="traversal-output" id="traversalOutput"></div>
-            </div>
-
-            <div id="stats-view" class="show">
+            <div id="stats-view">
                 <div class="stat-card">
                     <div class="stat-val" id="statHeight">0</div>
                     <div class="stat-label">Height</div>
@@ -442,7 +381,6 @@
     let animationQueue = [];
     let isAnimating = false;
     let rotationCount = 0;
-    let currentTraversalString = "";
 
     // Camera
     let offsetX = 0, offsetY = 0, scale = 1;
@@ -671,30 +609,6 @@
         }
     }
 
-    // --- Traversals ---
-    function handleTraversal(type) {
-        if(!root) return;
-        document.getElementById('traversalOutput').textContent = "";
-        currentTraversalString = "";
-        animationQueue = [];
-        switchView('traversal');
-        
-        const visit = (node) => {
-            animationQueue.push({ type: 'visit', treeSnapshot: cloneTree(root), target: node, val: node.val });
-        };
-
-        if(type === 'in') {
-            const traverse = (n) => { if(!n) return; traverse(n.left); visit(n); traverse(n.right); };
-            traverse(root);
-        } else if(type === 'pre') {
-            const traverse = (n) => { if(!n) return; visit(n); traverse(n.left); traverse(n.right); };
-            traverse(root);
-        } else if(type === 'post') {
-            const traverse = (n) => { if(!n) return; traverse(n.left); traverse(n.right); visit(n); };
-            traverse(root);
-        }
-        runAnimation();
-    }
 
     // --- Animation Engine ---
     function runAnimation() {
@@ -713,12 +627,6 @@
             }
             const step = animationQueue[stepIndex++];
             if(step.msg) showStatus(step.msg);
-
-            // Traversal text
-            if(step.type === 'visit') {
-                currentTraversalString += (currentTraversalString ? " → " : "") + step.val;
-                document.getElementById('traversalOutput').textContent = currentTraversalString;
-            }
 
             drawTree(step);
             
@@ -769,7 +677,7 @@
             let color = COLORS.normal;
             if(step && step.target && node.x === step.target.x && node.y === step.target.y) {
                  if(step.type === 'compare') color = COLORS.compare;
-                 if(step.type === 'success' || step.type === 'visit' || step.type === 'spawn') color = COLORS.success;
+                 if(step.type === 'success' || step.type === 'spawn') color = COLORS.success;
                  if(step.type === 'imbalance') color = COLORS.imbalance;
             }
 
@@ -812,13 +720,6 @@
         return isNaN(v) ? null : v;
     }
 
-    function switchView(mode) {
-        document.getElementById('opt-stats').classList.toggle('active', mode==='stats');
-        document.getElementById('opt-traversal').classList.toggle('active', mode==='traversal');
-        document.getElementById('stats-view').classList.toggle('show', mode==='stats');
-        document.getElementById('traversal-view').classList.toggle('show', mode==='traversal');
-    }
-    
     function showStatus(msg) {
         const el = document.getElementById('statusMessage');
         el.innerText = msg; el.classList.add('show');
@@ -864,60 +765,6 @@
         updateStats();
         drawTree(null);
         showStatus("Random Tree Generated");
-    }
-    
-    function handleWorstCase() {
-        handleClear();
-        const vals = [1, 2, 3, 4, 5, 6, 7];
-        let i = 0;
-        isAnimating = true;
-        disableControls(true);
-        
-        // Sequential insertion animation
-        const next = () => {
-            if(i >= vals.length) {
-                isAnimating = false;
-                disableControls(false);
-                return;
-            }
-            // We reuse handleInsert logic by setting input
-            document.getElementById('valInput').value = vals[i++];
-            handleInsert();
-            // Wait for insert animation to finish roughly
-            // Since handleInsert starts runAnimation, we need to chain them or just let them queue?
-            // handleInsert clears queue... so we can't just loop.
-            // Simplified: just insert instantly for worst case setup? 
-            // The user probably wants to see the rotations. 
-            // We can't easily chain existing handleInsert without promises.
-            // Let's just do it instantly for now to show the RESULT.
-        };
-        // Actually, let's just insert them all instantly to show the final balanced tree vs what would be a line
-        vals.forEach(v => {
-             document.getElementById('valInput').value = v;
-             // force logic without animation queue reset? difficult.
-             // Let's just do random-style logic
-             const insertRec = (node, val) => {
-                    if(!node) return new AVLNode(val);
-                    if(val < node.val) node.left = insertRec(node.left, val);
-                    else if(val > node.val) node.right = insertRec(node.right, val);
-                    else return node;
-                    updateHeight(node);
-                    let balance = getBalance(node);
-                    if(balance > 1 && val < node.left.val) return rightRotate(node);
-                    if(balance < -1 && val > node.right.val) return leftRotate(node);
-                    if(balance > 1 && val > node.left.val) { node.left = leftRotate(node.left); return rightRotate(node); }
-                    if(balance < -1 && val < node.right.val) { node.right = rightRotate(node.right); return leftRotate(node); }
-                    return node;
-             };
-             if(!root) root = new AVLNode(v);
-             else root = insertRec(root, v);
-        });
-        updatePositions(root);
-        updateStats();
-        drawTree(null);
-        isAnimating = false;
-        disableControls(false);
-        showStatus("Worst Case (1..7) Balanced");
     }
     
     function handleClear() {
