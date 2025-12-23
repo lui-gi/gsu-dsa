@@ -172,6 +172,28 @@
         }
         button.danger:hover { background: rgba(204, 0, 0, 0.3); border-color: #ff6b6b; }
 
+        /* Rotation Control */
+        #rotation-control {
+            animation: pulseGlow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(1.05); }
+        }
+
+        #rotateBtn {
+            background: linear-gradient(135deg, var(--gsu-blue), #0055CC);
+            border-color: var(--gsu-blue);
+            box-shadow: 0 4px 15px rgba(0, 57, 166, 0.4);
+            font-weight: 600;
+        }
+
+        #rotateBtn:hover {
+            background: linear-gradient(135deg, #004BC9, #0066DD);
+            box-shadow: 0 6px 20px rgba(0, 57, 166, 0.6);
+        }
+
         /* --- CANVAS AREA --- */
         #canvas-wrapper {
             flex-grow: 1;
@@ -311,6 +333,10 @@
                     <button onclick="handleRandom()">Random</button>
                     <button onclick="handleClear()">Clear</button>
                 </div>
+
+                <div class="control-group" id="rotation-control" style="display: none;">
+                    <button class="primary" id="rotateBtn" onclick="executeRotation()">Rotate</button>
+                </div>
             </div>
         </header>
 
@@ -380,6 +406,12 @@
     let animationQueue = [];
     let isAnimating = false;
     let rotationCount = 0;
+
+    // Rotation control state
+    let isWaitingForRotation = false;
+    let pendingRotationType = null; // 'LL', 'RR', 'LR', 'RL'
+    let skipRootRotation = false;
+    let rotationCallback = null;
 
     // Camera
     let offsetX = 0, offsetY = 0, scale = 1;
@@ -459,6 +491,144 @@
 
     function countNodes(n) { if(!n) return 0; return 1 + countNodes(n.left) + countNodes(n.right); }
 
+    // --- Rotation Animation Helpers ---
+
+    function showRotateButton(show) {
+        document.getElementById('rotation-control').style.display = show ? 'flex' : 'none';
+    }
+
+    function buildPositionMap(beforeTree, afterTree) {
+        const map = new Map();
+
+        const traverse = (before, after) => {
+            if (!before || !after) return;
+
+            // Map node value to before/after positions
+            map.set(after.val, {
+                startX: before.x,
+                startY: before.y,
+                endX: after.x,
+                endY: after.y
+            });
+
+            // Recursively map children
+            if (before.left && after.left) traverse(before.left, after.left);
+            if (before.right && after.right) traverse(before.right, after.right);
+
+            // Handle restructured nodes (left child becomes parent, etc.)
+            if (before.left && after.right && before.left.val === after.right.val) {
+                traverse(before.left, after.right);
+            }
+            if (before.right && after.left && before.right.val === after.left.val) {
+                traverse(before.right, after.left);
+            }
+        };
+
+        traverse(beforeTree, afterTree);
+        return map;
+    }
+
+    function applyInterpolation(node, positionMap, progress) {
+        if (!node) return;
+
+        const pos = positionMap.get(node.val);
+        if (pos) {
+            // Ease-in-out quad easing
+            const ease = t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+            const p = ease(progress);
+
+            node.x = pos.startX + (pos.endX - pos.startX) * p;
+            node.y = pos.startY + (pos.endY - pos.startY) * p;
+        }
+
+        applyInterpolation(node.left, positionMap, progress);
+        applyInterpolation(node.right, positionMap, progress);
+    }
+
+    function animateRotation(rotationType, callback) {
+        // 1. Capture "before" positions
+        const beforeSnapshot = cloneTree(root);
+        updatePositions(beforeSnapshot);
+
+        // 2. Perform rotation(s)
+        switch(rotationType) {
+            case 'LL':
+                root = rightRotate(root);
+                break;
+            case 'RR':
+                root = leftRotate(root);
+                break;
+            case 'LR':
+                root.left = leftRotate(root.left);
+                root = rightRotate(root);
+                break;
+            case 'RL':
+                root.right = rightRotate(root.right);
+                root = leftRotate(root);
+                break;
+        }
+
+        // 3. Calculate "after" positions
+        updatePositions(root);
+        const afterSnapshot = cloneTree(root);
+
+        // 4. Build position map
+        const positionMap = buildPositionMap(beforeSnapshot, afterSnapshot);
+
+        // 5. Animate with requestAnimationFrame
+        const duration = 800; // ms
+        const startTime = performance.now();
+
+        const animate = (currentTime) => {
+            let progress = (currentTime - startTime) / duration;
+            if (progress > 1) progress = 1;
+
+            // Create interpolated snapshot
+            const interpolated = cloneTree(root);
+            applyInterpolation(interpolated, positionMap, progress);
+
+            // Draw interpolated state
+            drawTree({
+                type: 'rotate',
+                treeSnapshot: interpolated,
+                target: root
+            });
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // Animation complete
+                callback();
+            }
+        };
+
+        requestAnimationFrame(animate);
+    }
+
+    function executeRotation() {
+        if (!pendingRotationType) return;
+
+        // Hide button and update message
+        showRotateButton(false);
+        showStatus(`Performing ${pendingRotationType} rotation...`);
+
+        // Execute smooth rotation
+        animateRotation(pendingRotationType, () => {
+            // After animation completes
+            updateStats();
+            isWaitingForRotation = false;
+            pendingRotationType = null;
+            skipRootRotation = false;
+
+            // Resume animation queue if there's a callback
+            if (rotationCallback) {
+                const cb = rotationCallback;
+                rotationCallback = null;
+                cb();
+            }
+        });
+    }
+
     // --- Operations ---
 
     function handleInsert() {
@@ -497,19 +667,66 @@
         const insertedNode = findNode(root, val);
         animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), target: insertedNode, msg: `Inserted ${val} (BST position)` });
 
+        // CHECK: Does root need rotation?
+        const rootBalance = getBalance(root);
+        if (Math.abs(rootBalance) > 1) {
+            // Determine rotation type
+            let rotationType = null;
+
+            if (rootBalance > 1 && val < root.left.val) {
+                rotationType = 'LL';
+            } else if (rootBalance < -1 && val > root.right.val) {
+                rotationType = 'RR';
+            } else if (rootBalance > 1 && val > root.left.val) {
+                rotationType = 'LR';
+            } else if (rootBalance < -1 && val < root.right.val) {
+                rotationType = 'RL';
+            }
+
+            if (rotationType) {
+                // Root needs rotation - pause for user input
+                pendingRotationType = rotationType;
+                skipRootRotation = true;
+
+                // Push imbalance detection to queue
+                animationQueue.push({
+                    type: 'imbalance',
+                    treeSnapshot: cloneTree(root),
+                    target: root,
+                    msg: `Imbalance at root (BF: ${rootBalance})`
+                });
+
+                // Push pause step
+                animationQueue.push({
+                    type: 'await-rotation',
+                    treeSnapshot: cloneTree(root),
+                    msg: 'Rotation available.'
+                });
+
+                // Skip the rebalance call and just run animation
+                runAnimation();
+                return;
+            }
+        }
+
         // Step 2: Now perform rebalancing with rotations
-        const rebalance = (node, v) => {
+        const rebalance = (node, v, isRoot = false) => {
             if(!node) return node;
 
             // Recursively rebalance children first
-            if(v < node.val) node.left = rebalance(node.left, v);
-            else if(v > node.val) node.right = rebalance(node.right, v);
+            if(v < node.val) node.left = rebalance(node.left, v, false);
+            else if(v > node.val) node.right = rebalance(node.right, v, false);
 
             updateHeight(node);
             const balance = getBalance(node);
 
             // Check if unbalanced
             if(balance > 1 || balance < -1) {
+                // If this is root AND we're waiting for user to click button, skip rotation
+                if(isRoot && skipRootRotation) {
+                    return node; // Don't rotate, user will trigger it
+                }
+
                 animationQueue.push({ type: 'imbalance', treeSnapshot: cloneTree(root), target: node, msg: `Imbalance at ${node.val} (BF: ${balance})` });
 
                 // Left Left Case
@@ -551,7 +768,7 @@
             return node;
         };
 
-        root = rebalance(root, val);
+        root = rebalance(root, val, true);
         updatePositions(root);
 
         // Final balanced state
@@ -663,6 +880,31 @@
             const step = animationQueue[stepIndex++];
             if(step.msg) showStatus(step.msg);
 
+            // Handle rotation pause
+            if(step.type === 'await-rotation') {
+                isWaitingForRotation = true;
+                showRotateButton(true);
+                drawTree(step);
+
+                // Store callback to resume animation
+                rotationCallback = () => {
+                    showRotateButton(false);
+                    isWaitingForRotation = false;
+
+                    // Final success message
+                    showStatus('Tree is balanced');
+                    setTimeout(() => {
+                        isAnimating = false;
+                        disableControls(false);
+                        updateStats();
+                        drawTree(null);
+                    }, 600);
+                };
+
+                // Don't call process() again - wait for button click
+                return;
+            }
+
             drawTree(step);
 
             // Adjust speed: emphasize rotations (concept-focused)
@@ -671,7 +913,7 @@
             if(step.type === 'imbalance') delay = 900;
             if(step.type === 'success') delay = 600;
             if(step.type === 'compare') delay = 200;
-            
+
             setTimeout(process, delay);
         };
         process();
@@ -808,6 +1050,15 @@
         root = null;
         animationQueue = [];
         rotationCount = 0;
+        isAnimating = false;
+
+        // Reset rotation state
+        isWaitingForRotation = false;
+        pendingRotationType = null;
+        skipRootRotation = false;
+        rotationCallback = null;
+        showRotateButton(false);
+
         updateStats();
         drawTree(null);
         showStatus("Cleared");
