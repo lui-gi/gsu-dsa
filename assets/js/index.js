@@ -148,6 +148,20 @@ function render() {
                     loadInIframe(itemObj.name);
                 }
             });
+            // Add hover listeners for items in active category
+            item.addEventListener('mouseenter', () => {
+                // Only apply hover if this item is not currently active
+                if (cIdx === currentCat && iIdx !== currentItem) {
+                    item.classList.add('hovered');
+                }
+            });
+
+            item.addEventListener('mouseleave', () => {
+                // Remove hover state when mouse leaves
+                if (cIdx === currentCat && iIdx !== currentItem) {
+                    item.classList.remove('hovered');
+                }
+            });
             col.appendChild(item);
         });
 
@@ -183,6 +197,9 @@ function updateVertical(cIdx) {
     const items = col.querySelectorAll('.item');
 
     items.forEach((item, i) => {
+        // Clean up hover state on all items when navigation changes
+        item.classList.remove('hovered');
+
         if (i === currentItem) {
             item.classList.add('active');
         } else {

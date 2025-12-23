@@ -164,6 +164,15 @@ body, html {
     font-size: 24px;
 }
 
+/* HOVER STATE - Only applies to inactive items in active category */
+.item.hovered {
+    opacity: 0.8;
+    font-size: 22px;
+    font-weight: 500;
+    transform: scale(1.025) translateX(8px);
+    text-shadow: 0 0 8px rgba(255,255,255,0.25);
+}
+
 /* Font Awesome icons for menu items */
 .item-fa-icon {
     width: 45px; /* Larger item icon */
@@ -240,6 +249,7 @@ body, html {
 
 .nav-guide-enter {
     margin-left: 6px; /* Visual separation from arrow keys */
+    transform: rotate(90deg);
 }
 
 /* IFRAME CONTAINER */
