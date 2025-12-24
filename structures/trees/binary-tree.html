@@ -745,51 +745,160 @@
     // --- Traversals ---
     function handleTraversal(type) {
         if(!root) return;
-        clearLog(); addLog(`<strong>Traversal:</strong> ${type.toUpperCase()}`);
+        clearLog();
         document.getElementById('traversalOutput').textContent = "";
         currentTraversalString = "";
-        
+
         animationQueue = [];
-        
+
         const visit = (node) => {
             animationQueue.push({ type: 'visit', treeSnapshot: cloneTree(root), target: node, val: node.val });
-            addLog(`Visit ${node.val}`);
+        };
+
+        const getNodeType = (n) => {
+            if(!n.left && !n.right) return 'Leaf';
+            return 'Internal node';
         };
 
         if(type === 'in') {
-            const traverse = (n) => {
+            addLog(`<strong>Traversal: IN-ORDER</strong> (Left → Root → Right)`);
+
+            const traverse = (n, parent = null) => {
                 if(!n) return;
-                traverse(n.left);
+
+                // Descend to left
+                if(n.left) {
+                    addLog(`→ Descend to left child of ${n.val}`);
+                    traverse(n.left, n);
+                }
+
+                // Visit node with context
+                const isRoot = n === root;
+                const isLeaf = !n.left && !n.right;
+                let context = '';
+
+                if(isRoot) {
+                    context = 'Root - left subtree complete';
+                } else if(isLeaf) {
+                    context = 'Leaf node';
+                } else if(n.left && !n.right) {
+                    context = 'Left subtree complete, no right child';
+                } else if(!n.left && n.right) {
+                    context = 'No left child, will process right';
+                } else {
+                    context = 'Between left and right subtrees';
+                }
+
+                addLog(`→ <strong>Visit ${n.val}</strong> (${context})`);
                 visit(n);
-                traverse(n.right);
+
+                // Descend to right
+                if(n.right) {
+                    addLog(`→ Descend to right child of ${n.val}`);
+                    traverse(n.right, n);
+                }
+
+                // Backtrack indication for leaf nodes
+                if(isLeaf && parent) {
+                    addLog(`→ Backtrack to ${parent.val}`);
+                }
             };
             traverse(root);
+
         } else if(type === 'pre') {
+            addLog(`<strong>Traversal: PRE-ORDER</strong> (Root → Left → Right)`);
+
             const traverse = (n) => {
                 if(!n) return;
+
+                // Visit before children (pre-order logic)
+                const isRoot = n === root;
+                const isLeaf = !n.left && !n.right;
+                const context = isRoot ? 'Root - visit before children' :
+                               isLeaf ? 'Leaf node' :
+                               'Visit before exploring subtree';
+
+                addLog(`→ <strong>Visit ${n.val}</strong> (${context})`);
                 visit(n);
-                traverse(n.left);
-                traverse(n.right);
+
+                if(n.left) {
+                    addLog(`→ Descend to left child of ${n.val}`);
+                    traverse(n.left);
+                }
+
+                if(n.right) {
+                    addLog(`→ Descend to right child of ${n.val}`);
+                    traverse(n.right);
+                }
+
+                if(isLeaf) {
+                    addLog(`→ Leaf reached, backtrack`);
+                }
             };
             traverse(root);
+
         } else if(type === 'post') {
+            addLog(`<strong>Traversal: POST-ORDER</strong> (Left → Right → Root)`);
+
             const traverse = (n) => {
                 if(!n) return;
-                traverse(n.left);
-                traverse(n.right);
+
+                const hasLeft = !!n.left;
+                const hasRight = !!n.right;
+
+                if(hasLeft) {
+                    addLog(`→ Process left subtree of ${n.val}`);
+                    traverse(n.left);
+                }
+
+                if(hasRight) {
+                    addLog(`→ Process right subtree of ${n.val}`);
+                    traverse(n.right);
+                }
+
+                // Visit after children (post-order logic)
+                const isRoot = n === root;
+                const isLeaf = !hasLeft && !hasRight;
+                const context = isRoot ? 'Root - all subtrees processed' :
+                               isLeaf ? 'Leaf node' :
+                               'Children processed, now visit parent';
+
+                addLog(`→ <strong>Visit ${n.val}</strong> (${context})`);
                 visit(n);
             };
             traverse(root);
+
         } else if(type === 'level') {
-            const q = [root];
+            addLog(`<strong>Traversal: LEVEL-ORDER</strong> (Breadth-First)`);
+
+            const q = [{node: root, level: 0}];
+            let currentLevel = -1;
+
             while(q.length > 0) {
-                const n = q.shift();
+                const {node: n, level} = q.shift();
+
+                // Log level transitions
+                if(level > currentLevel) {
+                    addLog(`→ <span class="log-hl">Moving to Level ${level}</span>`);
+                    currentLevel = level;
+                }
+
+                const queueInfo = q.length > 0 ? `, Queue size: ${q.length}` : ', Queue empty';
+                addLog(`→ <strong>Visit ${n.val}</strong> (Level ${level}${queueInfo})`);
                 visit(n);
-                if(n.left) q.push(n.left);
-                if(n.right) q.push(n.right);
+
+                if(n.left) {
+                    addLog(`→ Enqueue left child ${n.left.val}`);
+                    q.push({node: n.left, level: level+1});
+                }
+
+                if(n.right) {
+                    addLog(`→ Enqueue right child ${n.right.val}`);
+                    q.push({node: n.right, level: level+1});
+                }
             }
         }
-        
+
         runAnimation();
     }
 
