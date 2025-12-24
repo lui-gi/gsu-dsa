@@ -252,7 +252,7 @@
 
         .view-toggle {
             position: absolute;
-            top: -35px;
+            top: -50px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(15, 23, 42, 0.9);
@@ -261,6 +261,7 @@
             padding: 4px;
             display: flex;
             gap: 4px;
+            z-index: 10;
         }
         .toggle-opt {
             padding: 4px 12px;
@@ -359,12 +360,22 @@
         }
         .trace-log-container.open { transform: translateY(0); }
         .trace-toggle-btn {
-            position: absolute; top: -36px; left: 20px; /* Left aligned to avoid colliding with toggle */
-            background: var(--gsu-blue); color: white;
-            border: 1px solid var(--glass-border); border-bottom: none;
-            padding: 8px 20px; border-radius: 12px 12px 0 0;
-            cursor: pointer; font-size: 13px; font-weight: 600;
-            display: flex; align-items: center; gap: 8px;
+            position: absolute;
+            top: -36px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gsu-blue);
+            color: white;
+            border: 1px solid var(--glass-border);
+            border-bottom: none;
+            padding: 8px 20px;
+            border-radius: 12px 12px 0 0;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
             transition: all 0.2s;
         }
         .trace-toggle-btn:hover { background: #004BC9; top: -38px; }
