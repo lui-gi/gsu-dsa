@@ -712,18 +712,17 @@
                 neighborsDiv.innerHTML = '<span style="color:var(--text-muted); font-style:italic;">null</span>';
             } else {
                 neighbors.forEach((nbrId, idx) => {
-                    if(idx > 0) neighborsDiv.innerHTML += '<span class="arrow-sep"><i class="fa-solid fa-arrow-right"></i></span>';
-                    
+                    if(idx > 0) neighborsDiv.innerHTML += '<span style="color:var(--text-muted); margin: 0 4px;">,</span>';
+
                     const chip = document.createElement('div');
                     chip.className = 'list-node';
                     chip.textContent = nbrId;
-                    
+
                     chip.onmouseenter = () => { hoverEdge = {u: n.id, v: nbrId}; draw(); };
                     chip.onmouseleave = () => { hoverEdge = null; draw(); };
-                    
+
                     neighborsDiv.appendChild(chip);
                 });
-                neighborsDiv.innerHTML += '<span class="arrow-sep"><i class="fa-solid fa-arrow-right"></i></span><span style="color:var(--text-muted);">null</span>';
             }
             row.appendChild(neighborsDiv);
             container.appendChild(row);
