@@ -188,6 +188,15 @@
             background: var(--gsu-blue);
             border-color: var(--gsu-blue);
         }
+        button.danger {
+            background: rgba(204, 0, 0, 0.2);
+            border-color: rgba(204, 0, 0, 0.4);
+            color: #ff6b6b;
+        }
+        button.danger:hover {
+            background: rgba(204, 0, 0, 0.3);
+            border-color: #ff6b6b;
+        }
 
         /* --- CANVAS AREA --- */
         #canvas-wrapper {
@@ -398,7 +407,7 @@
                 
                 <div class="control-group">
                     <button onclick="generateRandom()">Random</button>
-                    <button onclick="clearGraph()">Clear</button>
+                    <button class="danger" onclick="clearGraph()">Clear</button>
                 </div>
             </div>
         </header>
@@ -418,6 +427,7 @@
             <div class="panel-tabs">
                 <div class="panel-tab active" onclick="switchTab('matrix')">Adjacency Matrix</div>
                 <div class="panel-tab" onclick="switchTab('list')">Adjacency List</div>
+                <div class="panel-tab" onclick="switchTab('traversal')">Traversal Output</div>
             </div>
             <div class="panel-content">
                 <div class="view-section active" id="view-matrix">
@@ -425,6 +435,11 @@
                 </div>
                 <div class="view-section" id="view-list">
                     <div id="listContent"></div>
+                </div>
+                <div class="view-section" id="view-traversal">
+                    <div id="traversalContent" style="font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.8; color: #cbd5e1;">
+                        <div style="color: var(--text-muted); font-style: italic;">Run BFS or DFS to see traversal output...</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -501,8 +516,8 @@
     function switchTab(tab) {
         document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-        
-        const idx = tab === 'matrix' ? 0 : 1;
+
+        const idx = tab === 'matrix' ? 0 : tab === 'list' ? 1 : 2;
         document.querySelectorAll('.panel-tab')[idx].classList.add('active');
         document.getElementById(`view-${tab}`).classList.add('active');
     }
@@ -740,14 +755,16 @@
     function runBFS() {
         const start = getStartNode();
         if(start === null) { showStatus("Select a start node"); return; }
-        
+
         animationQueue = [];
         const visited = new Set();
         const queue = [start];
         visited.add(start);
         const adj = getAdjacencyData();
+        const traversalOrder = [];
 
         animationQueue.push({ type: 'visit', id: start, msg: `BFS Start: ${start}` });
+        traversalOrder.push(start);
 
         while(queue.length > 0) {
             const u = queue.shift();
@@ -758,11 +775,15 @@
                 if(!visited.has(v)) {
                     visited.add(v);
                     queue.push(v);
+                    traversalOrder.push(v);
                     animationQueue.push({ type: 'visit', id: v, parent: u, msg: `Visit ${v}` });
                 }
             }
             animationQueue.push({ type: 'done', id: u });
         }
+
+        displayTraversalOutput('BFS', start, traversalOrder);
+        switchTab('traversal');
         runAnimation();
     }
 
@@ -773,9 +794,11 @@
         animationQueue = [];
         const visited = new Set();
         const adj = getAdjacencyData();
+        const traversalOrder = [];
 
         function dfs(u, p) {
             visited.add(u);
+            traversalOrder.push(u);
             animationQueue.push({ type: 'visit', id: u, parent: p, msg: `DFS Visit ${u}` });
             animationQueue.push({ type: 'process', id: u }); // Highlight current
 
@@ -789,9 +812,75 @@
             }
             animationQueue.push({ type: 'done', id: u });
         }
-        
+
         dfs(start, null);
+        displayTraversalOutput('DFS', start, traversalOrder);
+        switchTab('traversal');
         runAnimation();
+    }
+
+    function displayTraversalOutput(algorithm, start, order) {
+        const container = document.getElementById('traversalContent');
+        container.innerHTML = '';
+
+        // Header
+        const header = document.createElement('div');
+        header.style.cssText = 'margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--glass-border);';
+        header.innerHTML = `
+            <div style="font-size: 16px; font-weight: 600; color: var(--gsu-blue-light); margin-bottom: 8px;">
+                ${algorithm} Traversal
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted);">
+                Starting from Node <strong style="color: white;">${start}</strong>
+            </div>
+        `;
+        container.appendChild(header);
+
+        // Traversal Order
+        const orderSection = document.createElement('div');
+        orderSection.style.cssText = 'margin-bottom: 20px;';
+        orderSection.innerHTML = `
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                Traversal Order:
+            </div>
+            <div style="font-size: 18px; color: white; font-weight: 500;">
+                ${order.join(' → ')}
+            </div>
+        `;
+        container.appendChild(orderSection);
+
+        // Statistics
+        const stats = document.createElement('div');
+        stats.style.cssText = 'display: flex; gap: 24px; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid var(--glass-border);';
+        stats.innerHTML = `
+            <div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--gsu-blue-light);">${order.length}</div>
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Nodes Visited</div>
+            </div>
+            <div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--gsu-blue-light);">${nodes.length}</div>
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total Nodes</div>
+            </div>
+            <div>
+                <div style="font-size: 24px; font-weight: 700; color: ${order.length === nodes.length ? '#28a745' : '#ffc107'};">
+                    ${order.length === nodes.length ? '✓' : '⚠'}
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
+                    ${order.length === nodes.length ? 'All Reached' : 'Partial'}
+                </div>
+            </div>
+        `;
+        container.appendChild(stats);
+
+        // Note if not all nodes were visited
+        if (order.length < nodes.length) {
+            const note = document.createElement('div');
+            note.style.cssText = 'margin-top: 16px; padding: 12px; background: rgba(255, 193, 7, 0.1); border-left: 3px solid #ffc107; border-radius: 4px; font-size: 13px; color: #cbd5e1;';
+            note.innerHTML = `
+                <strong style="color: #ffc107;">Note:</strong> Not all nodes were visited. The graph may be disconnected or some nodes are not reachable from Node ${start}.
+            `;
+            container.appendChild(note);
+        }
     }
 
     function runAnimation() {
