@@ -161,6 +161,32 @@
         }
         button.primary:hover { background: #059669; }
 
+        /* --- SELECT DROPDOWN --- */
+        select {
+            background: rgba(255,255,255,0.08);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+            min-width: 120px;
+        }
+        select:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        select option {
+            background: #0f172a;
+            color: white;
+        }
+
         /* --- CANVAS AREA --- */
         #canvas-wrapper {
             flex-grow: 1;
@@ -328,6 +354,9 @@
                 </div>
 
                 <div class="control-group">
+                    <select id="start-node-select" title="Select starting node (zero in-degree)">
+                        <option value="">Select Start Node</option>
+                    </select>
                     <button class="primary" onclick="runTopologicalSort()"><i class="fa-solid fa-play"></i> Run Sort</button>
                     <button id="btn-pop-stack" class="primary" onclick="popStack()" style="display: none;"><i class="fa-solid fa-arrow-down"></i> Pop Stack</button>
                 </div>
@@ -494,12 +523,14 @@
         const lbl = label || String.fromCharCode(65 + (nextId % 26)) + (Math.floor(nextId/26) || "");
         nodes.push({ id: nextId++, x, y, label: lbl });
         resetTable();
+        updateStartNodeDropdown();
         draw();
     }
 
     function addEdge(u, v) {
         if (!edges.some(e => e.u === u && e.v === v)) {
             edges.push({ u, v });
+            updateStartNodeDropdown();
             draw();
         }
     }
@@ -515,8 +546,42 @@
         document.getElementById('btn-pop-stack').style.display = 'none';
         document.getElementById('topo-order-section').style.display = 'none';
         document.getElementById('topoOrderList').innerHTML = '';
+        updateStartNodeDropdown();
         resetTable();
         draw();
+    }
+
+    // --- Start Node Dropdown ---
+    function updateStartNodeDropdown() {
+        const select = document.getElementById('start-node-select');
+
+        // Calculate in-degrees
+        const inDegree = {};
+        nodes.forEach(n => inDegree[n.id] = 0);
+        edges.forEach(e => {
+            if (inDegree[e.v] !== undefined) {
+                inDegree[e.v]++;
+            }
+        });
+
+        // Find nodes with zero in-degree
+        const zeroInDegreeNodes = nodes.filter(n => inDegree[n.id] === 0);
+
+        // Clear and populate dropdown
+        select.innerHTML = '<option value="">Select Start Node</option>';
+
+        if (zeroInDegreeNodes.length === 0) {
+            select.innerHTML = '<option value="">No valid start nodes</option>';
+            select.disabled = true;
+        } else {
+            zeroInDegreeNodes.forEach(n => {
+                const option = document.createElement('option');
+                option.value = n.id;
+                option.textContent = `Node ${n.label}`;
+                select.appendChild(option);
+            });
+            select.disabled = false;
+        }
     }
 
     // --- Table & Stack Logic ---
@@ -607,6 +672,16 @@
 
     async function runTopologicalSort() {
         if (isRunning || nodes.length === 0) return;
+
+        // Get selected start node
+        const select = document.getElementById('start-node-select');
+        const selectedNodeId = select.value ? parseInt(select.value) : null;
+
+        if (selectedNodeId === null) {
+            showStatus("Please select a start node first!");
+            return;
+        }
+
         isRunning = true;
         globalTime = 0;
         nodeStatus = {};
@@ -622,6 +697,12 @@
         const recStack = {};    // id -> bool (for cycle detection)
 
         try {
+            // Start with the selected node first
+            if (!visited[selectedNodeId]) {
+                await dfs(selectedNodeId, visited, recStack);
+            }
+
+            // Then visit remaining nodes
             for (let i = 0; i < nodes.length; i++) {
                 const n = nodes[i];
                 if (!visited[n.id]) {
@@ -779,6 +860,7 @@
     }
 
     resizeCanvas();
+    updateStartNodeDropdown();
     showStatus("Ready");
 </script>
 </body>

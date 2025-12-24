@@ -120,6 +120,32 @@
         .tool-btn.primary { background: #10b981; border-color: #059669; }
         .tool-btn.primary:hover { background: #059669; }
 
+        /* --- SELECT DROPDOWN --- */
+        select {
+            background: rgba(255,255,255,0.08);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+            min-width: 140px;
+        }
+        select:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        select option {
+            background: #0f172a;
+            color: white;
+        }
+
         /* --- CANVAS AREA --- */
         #canvas-wrapper {
             grid-column: 1 / 2;
@@ -230,7 +256,9 @@
             <div class="toolbar">
                 <button class="tool-btn active" id="btn-node" onclick="setMode('node')"><i class="fa-solid fa-plus"></i> Node</button>
                 <button class="tool-btn" id="btn-edge" onclick="setMode('edge')"><i class="fa-solid fa-arrow-right"></i> Edge</button>
-                <button class="tool-btn" id="btn-start" onclick="setMode('start')"><i class="fa-solid fa-flag"></i> Set Start</button>
+                <select id="start-node-select" onchange="handleStartNodeChange()" title="Select start node">
+                    <option value="">Select Start Node</option>
+                </select>
                 <div style="width:1px; background:var(--glass-border); margin:0 5px;"></div>
                 <button class="tool-btn primary" onclick="runDijkstra()"><i class="fa-solid fa-play"></i> Run</button>
                 <button class="tool-btn" onclick="loadPreset()">Load Preset</button>
@@ -286,7 +314,7 @@
     const NODE_RADIUS = 20;
     
     // --- STATE ---
-    let mode = 'node'; // node, edge, start
+    let mode = 'node'; // node, edge
     let nodes = [];
     let edges = []; // {u, v, w}
     let nextId = 0;
@@ -321,10 +349,9 @@
         mode = m;
         document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`btn-${m}`).classList.add('active');
-        
+
         let msg = "Click to add nodes.";
         if(m==='edge') msg = "Drag between nodes to add weighted edge.";
-        if(m==='start') msg = "Click a node to set as Start Point.";
         showStatus(msg);
     }
 
@@ -342,10 +369,6 @@
 
         if(mode === 'node' && !clickedNode) {
             addNode(x, y);
-        } else if(mode === 'start' && clickedNode) {
-            startNodeId = clickedNode.id;
-            resetAlgoState();
-            draw();
         } else if(mode === 'edge' && clickedNode) {
             isDragging = true;
             edgeStartNode = clickedNode;
@@ -380,7 +403,7 @@
     function addNode(x, y, label) {
         const lbl = label || String.fromCharCode(65 + (nextId % 26));
         nodes.push({ id: nextId++, x, y, label: lbl });
-        if(startNodeId === null) startNodeId = nodes[0].id;
+        updateStartNodeDropdown();
         resetAlgoState();
         draw();
     }
@@ -442,14 +465,50 @@
         edges.push({u:4, v:5, w:6});
         edges.push({u:2, v:4, w:4}); // 2->4 weight 4 in lecture
 
+        updateStartNodeDropdown();
         resetAlgoState();
         draw();
     }
 
     function clearGraph() {
         nodes = []; edges = []; nextId = 0; startNodeId = null;
+        updateStartNodeDropdown();
         resetAlgoState();
         draw();
+    }
+
+    // --- START NODE DROPDOWN ---
+    function updateStartNodeDropdown() {
+        const select = document.getElementById('start-node-select');
+        const currentSelection = startNodeId;
+
+        // Clear and populate dropdown
+        select.innerHTML = '<option value="">Select Start Node</option>';
+
+        if (nodes.length === 0) {
+            select.disabled = true;
+        } else {
+            nodes.forEach(n => {
+                const option = document.createElement('option');
+                option.value = n.id;
+                option.textContent = `Node ${n.label}`;
+                if (n.id === currentSelection) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+            select.disabled = false;
+        }
+    }
+
+    function handleStartNodeChange() {
+        const select = document.getElementById('start-node-select');
+        startNodeId = select.value ? parseInt(select.value) : null;
+        resetAlgoState();
+        draw();
+        if (startNodeId !== null) {
+            showStatus(`Start node set to: ${getNodeLabel(startNodeId)}`);
+        }
     }
 
     // --- ALGORITHM: DIJKSTRA ---
@@ -759,6 +818,7 @@
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
     // Init
+    updateStartNodeDropdown();
     draw();
 
 </script>
