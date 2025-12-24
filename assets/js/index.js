@@ -45,44 +45,33 @@ const menuData = [
     }
 ];
 
-// File path mapping for visualization HTML files
 const itemToPath = {
-    // System
     "About GSU DSA": "system/about.html",
-    // Linear Structures
     "Stack": "structures/linear-structures/stack.html",
     "Queue": "structures/linear-structures/queue.html",
     "Singly Linked List": "structures/linear-structures/singly-linked-list.html",
     "Doubly Linked List": "structures/linear-structures/doubly-linked-list.html",
-
-    // Key-Value Stores
     "Dictionary": "structures/key-value-stores/dictionary.html",
     "Hash Table": "structures/key-value-stores/hash-table.html",
-
-    // Trees
     "Binary Tree": "structures/trees/binary-tree.html",
     "Heap": "structures/trees/heap.html",
     "AVL Tree": "structures/trees/avl-tree.html",
     "Trie": "structures/trees/trie.html",
-
-    // Graphs & Algorithms
     "Graph Representation": "structures/graphs-and-algorithms/graph-representation.html",
     "Topological Sort": "structures/graphs-and-algorithms/topological-sort.html",
     "Dijkstra's Algorithm": "structures/graphs-and-algorithms/dijkstras-algorithm.html"
 };
 
-let currentCat = 1; // Start at Linear Structures
-let currentItem = 0; // Start at Stack (first item)
-
+let currentCat = 1; 
+let currentItem = 0; 
 const rowEl = document.getElementById('category-row');
-
-// UPDATED JS CONSTANTS to match CSS variables
 const ICON_SPACING = 200;
 const ITEM_HEIGHT = 80;
 
 function init() {
     render();
     updatePos();
+    initBackground(); // Initialize the PS3 wave background
 }
 
 function render() {
@@ -100,16 +89,14 @@ function render() {
         const icon = document.createElement('div');
         icon.className = 'cat-icon';
         icon.style.cursor = 'pointer';
-        // Add Font Awesome icon to category
         icon.innerHTML = `<i class="${cat.icon}" style="font-size: 48px; color: #0039A6;"></i>`;
-        // Click on category icon to navigate to that category
+        
         icon.addEventListener('click', () => {
             currentCat = cIdx;
             currentItem = 0;
             updatePos();
         });
 
-        // Add hover listeners for non-active categories
         icon.addEventListener('mouseenter', () => {
             if (cIdx !== currentCat) {
                 group.classList.add('hovered');
@@ -130,34 +117,28 @@ function render() {
             const item = document.createElement('div');
             item.className = 'item';
             item.style.cursor = 'pointer';
-            // Use Font Awesome icons instead of square icons
             item.innerHTML = `<i class="${itemObj.icon} item-fa-icon"></i><span>${itemObj.name}</span>`;
-            // Click on menu item to select it and load in iframe
+            
             item.addEventListener('click', () => {
                 if (currentCat === cIdx) {
                     currentItem = iIdx;
                     updatePos();
-                    // Load the clicked item in iframe
                     loadInIframe(itemObj.name);
                 } else {
-                    // If clicking an item from a different category, switch to that category first
                     currentCat = cIdx;
                     currentItem = iIdx;
                     updatePos();
-                    // Load the clicked item in iframe
                     loadInIframe(itemObj.name);
                 }
             });
-            // Add hover listeners for items in active category
+
             item.addEventListener('mouseenter', () => {
-                // Only apply hover if this item is not currently active
                 if (cIdx === currentCat && iIdx !== currentItem) {
                     item.classList.add('hovered');
                 }
             });
 
             item.addEventListener('mouseleave', () => {
-                // Remove hover state when mouse leaves
                 if (cIdx === currentCat && iIdx !== currentItem) {
                     item.classList.remove('hovered');
                 }
@@ -171,14 +152,10 @@ function render() {
 }
 
 function updatePos() {
-    // Horizontal Scroll
     rowEl.style.transform = `translateX(${currentCat * ICON_SPACING * -1}px)`;
 
-    // Category Classes
     menuData.forEach((_, i) => {
         const grp = document.getElementById(`cat-${i}`);
-
-        // Clean up hover state on all categories
         grp.classList.remove('hovered');
 
         if (i === currentCat) {
@@ -197,9 +174,7 @@ function updateVertical(cIdx) {
     const items = col.querySelectorAll('.item');
 
     items.forEach((item, i) => {
-        // Clean up hover state on all items when navigation changes
         item.classList.remove('hovered');
-
         if (i === currentItem) {
             item.classList.add('active');
         } else {
@@ -207,17 +182,13 @@ function updateVertical(cIdx) {
         }
     });
 
-    // Vertical Scroll Calculation
     const scrollY = currentItem * ITEM_HEIGHT * -1;
     col.style.transform = `translateY(${scrollY}px)`;
 }
 
-
-// Iframe load and close functions
 function loadInIframe(itemName) {
     const path = itemToPath[itemName];
     if (!path) {
-        // System items don't have paths - ignore for now
         console.log(`No path defined for: ${itemName}`);
         return;
     }
@@ -225,15 +196,10 @@ function loadInIframe(itemName) {
     const container = document.getElementById('iframe-container');
     const iframe = document.getElementById('content-iframe');
 
-    // Load the content
     iframe.src = path;
-
-    // Show iframe with animation
     container.classList.remove('hidden');
-    // Add split-view class to body to compress menu
     document.body.classList.add('split-view');
 
-    // Trigger animation after display change
     setTimeout(() => {
         container.classList.add('visible');
     }, 10);
@@ -243,11 +209,9 @@ function closeIframe() {
     const container = document.getElementById('iframe-container');
     const iframe = document.getElementById('content-iframe');
 
-    // Hide iframe with animation
     container.classList.remove('visible');
     document.body.classList.remove('split-view');
 
-    // Clear iframe src after animation completes
     setTimeout(() => {
         container.classList.add('hidden');
         iframe.src = '';
@@ -278,13 +242,148 @@ document.addEventListener('keydown', (e) => {
             updatePos();
         }
     } else if(e.key === 'Enter') {
-        // Load the current item in iframe
         const itemName = menuData[currentCat].items[currentItem].name;
         loadInIframe(itemName);
     } else if(e.key === 'Escape') {
-        // Close iframe
         closeIframe();
     }
 });
+
+// ==========================================
+// PS3 XMB BACKGROUND ANIMATION LOGIC
+// ==========================================
+let canvas, ctx;
+let width, height;
+let waves = [];
+let particles = [];
+let tick = 0;
+
+function initBackground() {
+    canvas = document.getElementById('bg-canvas');
+    ctx = canvas.getContext('2d');
+    
+    resize();
+    window.addEventListener('resize', resize);
+    
+    // Create Waves (Layered for depth)
+    // Args: y-offset, amplitude, frequency, speed, color
+    waves.push(new Wave(0.5, 30, 0.005, 0.002, 'rgba(255, 255, 255, 0.1)'));
+    waves.push(new Wave(0.5, 40, 0.004, 0.003, 'rgba(255, 255, 255, 0.15)'));
+    
+    // Create "Glitter" Particles
+    for(let i = 0; i < 40; i++) {
+        particles.push(new Particle());
+    }
+
+    animate();
+}
+
+function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+}
+
+class Wave {
+    constructor(yPercent, amplitude, freq, speed, color) {
+        this.yPercent = yPercent;
+        this.amplitude = amplitude;
+        this.freq = freq;
+        this.speed = speed;
+        this.color = color;
+        this.phase = Math.random() * Math.PI * 2;
+    }
+
+    draw(ctx, time) {
+        ctx.beginPath();
+        const baseH = height * this.yPercent;
+        
+        // Draw the top sine curve
+        for(let x = 0; x <= width; x += 5) {
+            const y = baseH + Math.sin(x * this.freq + time * this.speed + this.phase) * this.amplitude;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+
+        // Draw the bottom sine curve (slightly offset to create ribbon)
+        for(let x = width; x >= 0; x -= 5) {
+            const y = baseH + Math.sin(x * this.freq + time * this.speed + this.phase + 1.5) * this.amplitude + 50; 
+            ctx.lineTo(x, y);
+        }
+
+        ctx.fillStyle = this.color;
+        ctx.closePath();
+        ctx.fill();
+
+        // Optional: Add a thin white stroke line on top
+        ctx.beginPath();
+        for(let x = 0; x <= width; x += 5) {
+            const y = baseH + Math.sin(x * this.freq + time * this.speed + this.phase) * this.amplitude;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = "rgba(255,255,255,0.1)";
+        ctx.stroke();
+    }
+}
+
+class Particle {
+    constructor() {
+        this.reset();
+    }
+
+    reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * 0.5; // Slow drift X
+        this.vy = (Math.random() - 0.5) * 0.5; // Slow drift Y
+        this.size = Math.random() * 2;
+        this.alpha = Math.random() * 0.5;
+        this.fade = (Math.random() * 0.01) + 0.005;
+        this.fadingIn = true;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Fade in/out
+        if (this.fadingIn) {
+            this.alpha += this.fade;
+            if (this.alpha >= 0.8) this.fadingIn = false;
+        } else {
+            this.alpha -= this.fade;
+            if (this.alpha <= 0) this.reset();
+        }
+
+        // Wrap screen
+        if(this.x > width) this.x = 0;
+        if(this.x < 0) this.x = width;
+        if(this.y > height) this.y = 0;
+        if(this.y < 0) this.y = height;
+    }
+
+    draw(ctx) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function animate() {
+    ctx.clearRect(0, 0, width, height);
+    tick += 1;
+
+    // Draw Particles behind waves
+    particles.forEach(p => {
+        p.update();
+        p.draw(ctx);
+    });
+
+    // Draw Waves
+    waves.forEach(w => w.draw(ctx, tick));
+
+    requestAnimationFrame(animate);
+}
 
 init();

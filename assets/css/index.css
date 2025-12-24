@@ -23,29 +23,21 @@ body, html {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: var(--bg-gradient);
+    background: var(--bg-gradient); /* Keep the blue gradient here */
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     color: var(--text-color);
-    /* Bump up base font size */
     font-size: 18px;
 }
 
-.wave {
-    position: absolute;
-    width: 200%;
-    height: 200%;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 40%;
-    animation: rotate 20s linear infinite;
-    top: 50%;
-    left: -50%;
-    z-index: 0;
-    pointer-events: none;
-}
-
-@keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+/* CANVAS STYLING */
+#bg-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0; /* Behind UI (10), but above background */
+    pointer-events: none; /* Let clicks pass through */
 }
 
 /* HORIZONTAL AXIS */
@@ -68,7 +60,7 @@ body, html {
     transition: opacity 0.3s, transform 0.3s;
 }
 
-/* CATEGORY ICON (The big square) */
+/* CATEGORY ICON */
 .cat-icon {
     width: var(--icon-size);
     height: var(--icon-size);
@@ -98,10 +90,10 @@ body, html {
     transform: scale(0.8);
 }
 
-/* LABEL (e.g. "Settings") */
+/* LABEL */
 .cat-label {
     position: absolute;
-    top: -60px; /* Moved up to account for larger size */
+    top: -60px;
     white-space: nowrap;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     font-size: 22px;
@@ -112,7 +104,7 @@ body, html {
 }
 .category-group.active .cat-label { opacity: 1; }
 
-/* HOVER STATE - Only applies to inactive categories */
+/* HOVER STATE */
 .category-group.inactive.hovered .cat-icon {
     opacity: 0.85;
     transform: scale(0.95);
@@ -123,7 +115,6 @@ body, html {
     opacity: 1;
 }
 
-/* Explicitly ensure items stay hidden on hover */
 .category-group.inactive.hovered .item-col {
     opacity: 0;
 }
@@ -133,8 +124,8 @@ body, html {
     display: flex;
     flex-direction: column;
     position: absolute;
-    left: 10px; /* Slight offset from center line */
-    width: 600px; /* Wider for larger text */
+    left: 10px;
+    width: 600px;
     top: 0px;
     opacity: 0;
     transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s;
@@ -151,7 +142,7 @@ body, html {
     transition: margin-top 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
                 opacity 0.2s,
                 transform 0.2s;
-    font-size: 20px; /* Larger item text */
+    font-size: 20px;
 }
 
 /* THE SKIP LOGIC */
@@ -164,7 +155,7 @@ body, html {
     font-size: 24px;
 }
 
-/* HOVER STATE - Only applies to inactive items in active category */
+/* HOVER STATE */
 .item.hovered {
     opacity: 0.8;
     font-size: 22px;
@@ -175,7 +166,7 @@ body, html {
 
 /* Font Awesome icons for menu items */
 .item-fa-icon {
-    width: 45px; /* Larger item icon */
+    width: 45px;
     font-size: 28px;
     margin-right: 25px;
     display: flex;
@@ -194,34 +185,26 @@ body, html {
     font-weight: 700;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
     letter-spacing: 3px;
+    z-index: 10;
 }
 /* Navigation Guide Box - Bottom Right */
 #nav-guide {
     position: absolute;
     bottom: 40px;
     right: 40px;
-
-    /* Glass morphism - subtle variant for homepage */
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(20px) saturate(150%);
     -webkit-backdrop-filter: blur(20px) saturate(150%);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 12px;
-
-    /* Spacing */
     padding: 12px 20px;
-
-    /* Visual depth */
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-
-    /* Layout */
     display: flex;
     align-items: center;
     gap: 12px;
-
-    /* Interaction states */
     opacity: 0.8;
     transition: opacity 0.3s;
+    z-index: 10;
 }
 
 #nav-guide:hover {
@@ -248,7 +231,7 @@ body, html {
 }
 
 .nav-guide-enter {
-    margin-left: 6px; /* Visual separation from arrow keys */
+    margin-left: 6px;
     transform: rotate(90deg);
 }
 
@@ -290,7 +273,7 @@ body, html {
 body.split-view #category-row,
 body.split-view #clock,
 body.split-view #nav-guide,
-body.split-view .wave {
+body.split-view #bg-canvas {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease-out;
