@@ -318,7 +318,7 @@
         <header>
             <div class="header-left">
                 <a href="#" class="back-btn" onclick="window.parent.closeIframe(); return false;">← Back</a>
-                <h1><i class="fa-solid fa-layer-group" style="margin-right: 12px; color: var(--gsu-blue-light);"></i>Topological Sort (DFS)</h1>
+                <h1><i class="fa-solid fa-layer-group" style="margin-right: 12px; color: var(--gsu-blue-light);"></i>Topological Sort</h1>
             </div>
             
             <div class="controls-toolbar">
@@ -332,8 +332,6 @@
                 </div>
                 
                 <div class="control-group">
-                    <button onclick="loadScenario('clothing')">Clothing</button>
-                    <button onclick="loadScenario('cycle')">Cycle Trap</button>
                     <button onclick="clearGraph()">Clear</button>
                 </div>
             </div>
@@ -510,40 +508,6 @@
         document.getElementById('stackContent').innerHTML = '';
         resetTable();
         draw();
-    }
-
-    function loadScenario(type) {
-        clearGraph();
-        if (type === 'clothing') {
-            const cx = canvas.width/2, cy = canvas.height/2;
-            // Manual layout for clothing DAG
-            addNode(cx-200, cy-150, "Undies"); // 0
-            addNode(cx, cy-150, "Pants");     // 1
-            addNode(cx+200, cy-150, "Belt");  // 2
-            addNode(cx-200, cy, "Shirt");     // 3
-            addNode(cx, cy, "Tie");           // 4
-            addNode(cx+200, cy, "Jacket");    // 5
-            addNode(cx-200, cy+150, "Socks"); // 6
-            addNode(cx, cy+150, "Shoes");     // 7
-            
-            // Edges
-            addEdge(0, 1); // Undies->Pants
-            addEdge(1, 2); // Pants->Belt
-            addEdge(1, 7); // Pants->Shoes
-            addEdge(3, 2); // Shirt->Belt
-            addEdge(3, 4); // Shirt->Tie
-            addEdge(4, 5); // Tie->Jacket
-            addEdge(2, 5); // Belt->Jacket
-            addEdge(6, 7); // Socks->Shoes
-        } else if (type === 'cycle') {
-            const cx = canvas.width/2, cy = canvas.height/2;
-            addNode(cx, cy-100, "A");
-            addNode(cx+100, cy+50, "B");
-            addNode(cx-100, cy+50, "C");
-            addEdge(0, 1);
-            addEdge(1, 2);
-            addEdge(2, 0);
-        }
     }
 
     // --- Table & Stack Logic ---
