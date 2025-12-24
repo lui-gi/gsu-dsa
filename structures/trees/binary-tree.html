@@ -964,18 +964,9 @@
         if(!data) return;
 
         ctx.save();
-        ctx.translate(offsetX + centerX - data.x, offsetY); // Center root initially?
-        // Better centering:
-        ctx.translate(-offsetX, offsetY); // Reset
+        // Center the tree: root is at x=0 from updatePositions, translate to canvas center
         ctx.translate(canvas.width/2 + offsetX, 50 + offsetY);
         ctx.scale(scale, scale);
-        
-        // Use a relative coordinate system where root is at 0,0 (visually set by layout)
-        // But layout puts root at X=canvasWidth/2... 
-        // Let's adjust logic: updatePositions sets absolute X relative to 0. 
-        // Let's center on Root's X.
-        const rootX = data.x;
-        ctx.translate(-rootX, 0);
 
         // Draw Edges
         const drawEdges = (node) => {
