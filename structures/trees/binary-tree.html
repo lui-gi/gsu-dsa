@@ -392,6 +392,58 @@
         .log-hl { color: var(--gsu-blue-light); font-weight: bold; }
         .log-math { color: #a5b4fc; font-style: italic; }
 
+        /* --- INFO MODAL --- */
+        .info-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .info-modal.show { display: flex; }
+        .modal-content {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        .modal-header {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gsu-blue-light);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .modal-body {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+        .modal-body strong {
+            color: var(--text-main);
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .modal-close-btn {
+            background: var(--gsu-blue);
+            border-color: var(--gsu-blue);
+            color: white;
+            padding: 10px 24px;
+        }
+        .modal-close-btn:hover {
+            background: #004BC9;
+        }
+
     </style>
 </head>
 <body>
@@ -477,6 +529,24 @@
             <div class="trace-header">Operation Trace</div>
             <div class="trace-content" id="logContent">
                 <div class="log-entry" style="opacity: 0.5;">Ready.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div class="info-modal" id="rootDeletionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="fa-solid fa-circle-info"></i>
+                Root Deletion Method
+            </div>
+            <div class="modal-body">
+                <p>This visualization uses the <strong>inorder successor</strong> approach when deleting the root node with two children.</p>
+                <p style="margin-top: 12px;">The inorder successor is the <strong>minimum value in the right subtree</strong> (leftmost node of the right child).</p>
+                <p style="margin-top: 12px;"><strong>Note:</strong> The <strong>inorder predecessor</strong> (maximum value in the left subtree) also works and is equally valid. Both methods maintain the BST property.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-close-btn" onclick="closeRootDeletionModal()">Got it!</button>
             </div>
         </div>
     </div>
@@ -674,9 +744,12 @@
     function handleDelete() {
         const val = getVal(); if(val===null) return;
         clearLog(); addLog(`<strong>Delete:</strong> ${val}`);
-        
+
         animationQueue = [];
-        
+
+        // Check if deleting root with two children - show modal to explain approach
+        const isDeletingRootWithTwoChildren = root && root.val === val && root.left && root.right;
+
         // Helper to get node map index for logging/array view
         const getIdx = (n, r=root, idx=0) => {
             if(!n || !r) return -1;
@@ -684,7 +757,7 @@
             // This is slow O(N) but fine for small visual trees
             // Actually, we can just trace path again or store it.
             // Simplified: we won't strictly compute array index in log logic to keep it simple.
-            return "?"; 
+            return "?";
         };
 
         const removeNode = (node, v) => {
@@ -735,9 +808,15 @@
         const oldRoot = cloneTree(root); // Snapshot before
         root = removeNode(root, val);
         updatePositions(root);
-        
+
         if(root || oldRoot) { // Only animate if tree existed
              animationQueue.push({ type: 'idle', treeSnapshot: cloneTree(root), msg: "Deletion Complete" });
+
+             // Show modal after animation if we deleted root with two children
+             if(isDeletingRootWithTwoChildren) {
+                 animationQueue.push({ type: 'show-modal' });
+             }
+
              runAnimation();
         }
     }
@@ -920,6 +999,14 @@
             const step = animationQueue[stepIndex++];
             if(step.msg) showStatus(step.msg);
 
+            // Show modal for root deletion explanation
+            if(step.type === 'show-modal') {
+                showRootDeletionModal();
+                isAnimating = false;
+                disableControls(false);
+                return;
+            }
+
             // Update Traversal String
             if(step.type === 'visit') {
                 currentTraversalString += (currentTraversalString ? " → " : "") + step.val;
@@ -1095,6 +1182,15 @@
     function zoomIn() { scale = Math.min(scale*1.2, 2.5); drawTree(null); }
     function zoomOut() { scale = Math.max(scale/1.2, 0.5); drawTree(null); }
     function resetView() { offsetX=0; offsetY=0; scale=1; drawTree(null); }
+
+    // Modal
+    function showRootDeletionModal() {
+        document.getElementById('rootDeletionModal').classList.add('show');
+    }
+
+    function closeRootDeletionModal() {
+        document.getElementById('rootDeletionModal').classList.remove('show');
+    }
 
     // Start
     resizeCanvas();
