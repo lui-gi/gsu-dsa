@@ -716,8 +716,8 @@
         if(!root) {
             root = new Node(val);
             addLog(`Tree empty. ${val} becomes Root.`);
+            updatePositions(root); // Calculate positions BEFORE taking snapshots
             animationQueue.push({ type: 'spawn', treeSnapshot: cloneTree(root), target: root });
-            updatePositions(root);
             animationQueue.push({ type: 'success', treeSnapshot: cloneTree(root), target: root });
         } else {
             let curr = root;
