@@ -43,12 +43,12 @@ body, html {
 /* ATLANTA SKYLINE BACKGROUND */
 #atlanta-skyline {
     position: fixed;
-    bottom: 0;
+    bottom: 50vh; /* Positioned much higher - centered vertically */
     left: 0;
     width: 200vw; /* Double width for seamless loop */
-    height: 25vh; /* Adjust based on SVG aspect ratio */
+    height: 35vh; /* Taller for better visibility at higher position */
     z-index: 0; /* Behind canvas waves (1), behind UI (10) */
-    opacity: 0.4; /* Subtle visibility */
+    opacity: 0.25; /* More subtle visibility */
     pointer-events: none;
 
     /* SVG as repeating background */
@@ -57,8 +57,9 @@ body, html {
     background-size: auto 100%; /* Full height, auto width */
     background-position: 0 bottom;
 
-    /* TEMP: Filter removed for testing */
-    /* filter: brightness(0) saturate(100%) invert(22%) sepia(96%) saturate(1844%) hue-rotate(207deg) brightness(91%) contrast(101%); */
+    /* Fade effect at bottom to blend with UI */
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
 
     /* Slow panning animation */
     animation: skyline-pan 120s linear infinite;
