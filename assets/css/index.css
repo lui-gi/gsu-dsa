@@ -43,7 +43,7 @@ body, html {
 /* ATLANTA SKYLINE BACKGROUND */
 #atlanta-skyline {
     position: fixed;
-    bottom: 50vh; /* Positioned much higher - centered vertically */
+    bottom: calc(50vh + 10px); /* Positioned 10px higher */
     left: 0;
     width: 200vw; /* Double width for seamless loop */
     height: 35vh; /* Taller for better visibility at higher position */

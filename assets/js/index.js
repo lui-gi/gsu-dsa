@@ -31,7 +31,7 @@ const menuData = [
             { name: "Binary Tree", icon: "fa-solid fa-code-fork" },
             { name: "Heap", icon: "fa-solid fa-sitemap" },
             { name: "AVL Tree", icon: "fa-solid fa-code-merge" },
-            { name: "Trie", icon: "fa-solid fa-chart-diagram" }
+            { name: "Trie", icon: "fa-solid fa-bookmark" }
         ]
     },
     {
