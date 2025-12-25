@@ -36,8 +36,37 @@ body, html {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 0; /* Behind UI (10), but above background */
+    z-index: 1; /* Above skyline (0), behind UI (10) */
     pointer-events: none; /* Let clicks pass through */
+}
+
+/* ATLANTA SKYLINE BACKGROUND */
+#atlanta-skyline {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 200vw; /* Double width for seamless loop */
+    height: 25vh; /* Adjust based on SVG aspect ratio */
+    z-index: 0; /* Behind canvas waves (1), behind UI (10) */
+    opacity: 0.4; /* Subtle visibility */
+    pointer-events: none;
+
+    /* SVG as repeating background */
+    background-image: url('../images/atlanta-skyline.svg');
+    background-repeat: repeat-x;
+    background-size: auto 100%; /* Full height, auto width */
+    background-position: 0 bottom;
+
+    /* TEMP: Filter removed for testing */
+    /* filter: brightness(0) saturate(100%) invert(22%) sepia(96%) saturate(1844%) hue-rotate(207deg) brightness(91%) contrast(101%); */
+
+    /* Slow panning animation */
+    animation: skyline-pan 120s linear infinite;
+}
+
+@keyframes skyline-pan {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
 }
 
 /* HORIZONTAL AXIS */
