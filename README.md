@@ -2,6 +2,8 @@
 
 **GSU DSA** is a static educational website designed specifically to support **Georgia State University** students taking CS 2720 / Data Structures. I'm a former student of **Dr. Islam**, and thus this project aims to provide a clear and interactive supplement to his CS 2720 curriculum.
 
+![Homepage](/assets/images/homepage.png)
+
 ## Overview
 
 Data structures are one of the most important concepts of computer science, especially in technical interviews, yet they can be difficult to grasp through the code implementation alone. As a previous student who has taken Dr. Islam's course, I built this tool to help current GSU Data Structures students visualize each concept because I also faced difficulty trying to imagine how these structures looked beyond their Python implementation.
