@@ -11,6 +11,16 @@ Data structures are one of the most important concepts of computer science, espe
 This project offers visualizations for the standard structures and algorithms covered in class, providing real-time feedback for operations like insertion, deletion, and traversal to reinforce understanding before exams. I also took inspiration from
 old PlayStation homescreens for the navigation for some nostalgic eye candy.
 
+## Preview
+
+### Example usage for Heaps
+![Homepage](/assets/images/heap.png)
+*Users can switch between min/max via the toggle.*
+
+### Example usage for Topological Sorting
+![Homepage](/assets/images/topological-sort.png)
+*Users can draw their own graph or use a preset.*
+
 ## Current Structures
 
 The application currently supports visualizations for the following data structures:
