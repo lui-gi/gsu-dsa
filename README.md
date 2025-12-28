@@ -17,8 +17,8 @@ The application currently supports visualizations for the following data structu
 
 ### Linear Structures
 
-* **Stack:** Visualize LIFO (Last-In, First-Out) operations (`push`, `pop`).
-* **Queue:** Visualize FIFO (First-In, First-Out) operations (`enqueue`, `dequeue`).
+* **Stack:** Visualize LIFO (Last-In, First-Out) operations
+* **Queue:** Visualize FIFO (First-In, First-Out) operations
 * **Linked Lists:**
 * Singly Linked List
 * Doubly Linked List
@@ -35,13 +35,13 @@ The application currently supports visualizations for the following data structu
 * **Binary Tree:** Standard binary tree traversal and structure.
 * **Heaps:** Max-Heap and Min-Heap operations (heapify, extract).
 * **AVL Tree:** Self-balancing binary search tree rotations.
-* **Trie:** String storage and retrieval optimization.
+* **Trie:** String storage and retrieval.
 
 ### Graphs & Algorithms
 
-* **Graph Traversals:** Visual representations of nodes and edges.
-* **Topological Sort:** Directed Acyclic Graph (DAG) ordering.
-* **Dijkstra's Algorithm:** Shortest path visualization.
+* **Graph Traversals:** Visual representations of nodes and edges + their respective adj. list/matrix representations.
+* **Topological Sort:** Visualizes dependency resolution and ordering for Directed Acyclic Graphs (DAGs).
+* **Dijkstra's Algorithm:**A weighted graph builder that visualizes the shortest path discovery process, generating a dynamic distance table and highlighting the final path.
 
 ##  License
 
