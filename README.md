@@ -1,4 +1,4 @@
-# <img src="favicon.ico" width="120">
+# <p align="center"><img src="favicon.ico" width="150"></p>
 
 **GSU DSA** is a static educational website designed specifically to support **Georgia State University** students taking CSC 2720 / Data Structures. 
 
