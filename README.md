@@ -56,6 +56,17 @@ The application currently supports visualizations for the following data structu
 * **Topological Sort:** Visualizes dependency resolution and ordering for Directed Acyclic Graphs (DAGs).
 * **Dijkstra's Algorithm:** A weighted graph builder that visualizes the shortest path discovery process, generating a dynamic distance table and highlighting the final path.
 
+## Missing Structures/Concepts
+
+These structures have not been implemented in the site as of yet, nor has their implementation been planned, though ontributions are welcome!
+
+* **Low-Level Array**
+* **Referential/Dynamic Array**
+* **Deque**
+* **Circularly Linked Lists**
+* **Any sorting**
+
+
 ## Contributing
 
 **GSU DSA** is an open-source project designed to serve GSU students first. Contributions are welcomed and encouraged in order to improve the tool for future semesters.
