@@ -58,7 +58,7 @@ The application currently supports visualizations for the following data structu
 
 ## Missing Structures/Concepts
 
-These structures have not been implemented in the site as of yet, nor has their implementation been planned, though ontributions are welcome!
+These structures have not been implemented in the site as of yet, nor has their implementation been planned, though contributions are welcome!
 
 * **Low-Level Array**
 * **Referential/Dynamic Array**
