@@ -54,7 +54,7 @@ The application currently supports visualizations for the following data structu
 
 * **Graph Traversals:** Visual representations of nodes and edges + their respective adj. list/matrix representations.
 * **Topological Sort:** Visualizes dependency resolution and ordering for Directed Acyclic Graphs (DAGs).
-* **Dijkstra's Algorithm:**A weighted graph builder that visualizes the shortest path discovery process, generating a dynamic distance table and highlighting the final path.
+* **Dijkstra's Algorithm:** A weighted graph builder that visualizes the shortest path discovery process, generating a dynamic distance table and highlighting the final path.
 
 ## Contributing
 
